@@ -28,16 +28,16 @@ function Run-Defrag {
   }
 
   [string]$query = 'Select * from Win32_Volume where DriveType = 3'
- 
+
   if ($drive) {
     $query += " And DriveLetter LIKE '$drive%'"
   }
- 
+
   $volumes = Get-WmiObject -Query $query -ComputerName $server
- 
+
   foreach ($volume in $volumes) {
     Write-Host "Defragmenting $($volume.DriveLetter)..." -noNewLine
-   
+
     $result = ($volume.Defrag($force)).ReturnValue
     switch ($result) {
       0  {Write-Host 'Success'}
