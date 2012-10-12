@@ -28,6 +28,7 @@ C:\NotBackedUp\Public\Toolbox
 param(
     [string] $EnvironmentVariableTarget = "Process")
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 [string[]] $path = [Environment]::GetEnvironmentVariable(

@@ -17,6 +17,7 @@ param(
     [string[]] $Folders,
     [string] $EnvironmentVariableTarget = "Process")
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 [int] $foldersAdded = 0
