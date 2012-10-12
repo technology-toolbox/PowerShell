@@ -82,6 +82,10 @@ process
 
     $items | foreach {
         [string] $item = $_
+
+        Write-Progress -Activity $MyInvocation.MyCommand `
+            -Status "Processing item: $item"
+
         [Text.Encoding] $encoding = & .\Get-FileEncoding.ps1 $item
 
         [string] $encodingShortName = GetEncodingShortName $encoding
@@ -104,7 +108,7 @@ process
 
         If ($linesModified -eq 0)
         {
-            Write-Host "The file does not contain any trailing whitespace."
+            Write-Debug "The file does not contain any trailing whitespace."
         }
         Else
         {
