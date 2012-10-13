@@ -91,7 +91,7 @@ begin
     function ParseHostsEntry(
         [string] $line)
     {
-        $hostsEntry = CreateHostsEntryObject $null $null $null
+        $hostsEntry = CreateHostsEntryObject
 
         Write-Debug "Parsing hosts entry: $line"
 
@@ -151,6 +151,8 @@ begin
     function UpdateHostsFile(
         $hostsEntries = $(Throw "Value cannot be null: hostsEntries"))
     {
+        Write-Verbose "Updatings hosts file..."
+
         [string] $hostsFile = $env:WINDIR + "\System32\drivers\etc\hosts"
 
         $buffer = New-Object System.Text.StringBuilder
@@ -201,7 +203,7 @@ begin
 
         Set-Content -Path $hostsFile -Value $hostsContent -Force -Encoding ASCII
 
-        Write-Host -Fore Green "Successfully updated hosts file."
+        Write-Verbose "Successfully updated hosts file."
     }
 
     [bool] $isInputFromPipeline =
@@ -272,12 +274,12 @@ end
 {
     If ($pendingUpdates -eq 0)
     {
-        Write-Host "No changes to the hosts file are necessary."
+        Write-Verbose "No changes to the hosts file are necessary."
 
         return
     }
 
-    Write-Host ("There are $pendingUpdates pending update(s) to the hosts" `
+    Write-Verbose ("There are $pendingUpdates pending update(s) to the hosts" `
         + " file.")
 
     UpdateHostsFile $hostsEntries
