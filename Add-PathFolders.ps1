@@ -17,62 +17,73 @@ param(
     [string[]] $Folders,
     [string] $EnvironmentVariableTarget = "Process")
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+begin
+{
+    Set-StrictMode -Version Latest
+    $ErrorActionPreference = "Stop"
 
-[int] $foldersAdded = 0
+    Write-Verbose "Path environment variable target: $EnvironmentVariableTarget"
 
-[string[]] $pathFolders = [Environment]::GetEnvironmentVariable(
-    "Path",
-    $EnvironmentVariableTarget) -Split ";"
+    [int] $foldersAdded = 0
 
-$folderList = New-Object System.Collections.ArrayList
+    [string[]] $pathFolders = [Environment]::GetEnvironmentVariable(
+        "Path",
+        $EnvironmentVariableTarget) -Split ";"
 
-$pathFolders | foreach {
-    $folderList.Add($_) | Out-Null
+    [Collections.ArrayList] $folderList = New-Object Collections.ArrayList
+
+    $pathFolders | foreach {
+        $folderList.Add($_) | Out-Null
+    }
 }
 
-$Folders | foreach {
-    [string] $folder = $_
+process
+{
+    $Folders | foreach {
+        [string] $folder = $_
 
-    [bool] $folderFound = $false
+        [bool] $isFolderInList = $false
 
-    $folderList | foreach {
-        If ([string]::Compare($_, $folder, $true) -eq 0)
+        $folderList | foreach {
+            If ([string]::Compare($_, $folder, $true) -eq 0)
+            {
+                Write-Verbose ("The folder ($folder) is already included" `
+                    + " in the Path environment variable.")
+
+                $isFolderInList = $true
+                return
+            }
+        }
+
+        If ($isFolderInList -eq $false)
         {
-            Write-Host ("The folder ($folder) is already included" `
-                + " in the Path environment variable.")
+            Write-Verbose ("Adding folder ($folder) to Path environment" `
+                + " variable...")
 
-            $folderFound = $true
-            return
+            $folderList.Add($folder) | Out-Null
+
+            $foldersAdded++
         }
     }
+}
 
-    If ($folderFound -eq $false)
+end
+{
+    If ($foldersAdded -eq 0)
     {
-        Write-Host "Adding folder ($folder) to Path environment variable..."
-        $folderList.Add($folder) | Out-Null
+        Write-Verbose ("No changes to the Path environment variable are" `
+            + " necessary.")
 
-        $foldersAdded++
+        return
     }
-}
 
-If ($foldersAdded -eq 0)
-{
-    Write-Host ("No changes to the Path environment variable are" `
-        + " necessary.")
-
-    Exit
-}
-Else
-{
     [string] $delimitedFolders = $folderList -Join ";"
 
     [Environment]::SetEnvironmentVariable(
         "Path",
         $delimitedFolders,
         $EnvironmentVariableTarget)
-}
 
-Write-Host -Fore Green ("Successfully added folders ($Folders) to Path" `
-    + " environment variable.")
+    Write-Verbose ("Successfully added $foldersAdded folder(s) to Path" `
+        + " environment variable.")
+}
