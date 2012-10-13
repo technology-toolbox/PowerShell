@@ -64,7 +64,7 @@ begin
     function CreateHostsEntryObject(
         [string] $ipAddress,
         [string[]] $hostnames,
-        <# [string] #> $comment) #HACK: If type is specified, it will never be null
+        <# [string] #> $comment) #HACK: never $null if type is specified
     {
         $hostsEntry = New-Object PSObject
         $hostsEntry | Add-Member NoteProperty -Name "IpAddress" `
