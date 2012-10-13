@@ -76,8 +76,11 @@ begin
         $hostsEntry | Add-Member NoteProperty -Name "Hostnames" `
             -Value $hostnamesList
 
-        $hostnames | foreach {
-            $hostsEntry.Hostnames.Add($_) | Out-Null
+        If ($hostnames -ne $null)
+        {
+            $hostnames | foreach {
+                $hostsEntry.Hostnames.Add($_) | Out-Null
+            }
         }
 
         $hostsEntry | Add-Member NoteProperty -Name "Comment" -Value $comment
@@ -229,7 +232,7 @@ process
 
             Write-Debug "Hosts entry: $hostsEntry"
 
-            If ($hostsEntry.Hostnames -eq $null)
+            If ($hostsEntry.Hostnames.Count -eq 0)
             {
                 continue
             }
