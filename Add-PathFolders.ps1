@@ -13,7 +13,7 @@ Specifies the "scope" to use for the Path environment variable ("Process",
 .\Add-PathFolders.ps1 C:\NotBackedUp\Public\Toolbox
 #>
 param(
-    [parameter(Mandatory=$true)]
+    [parameter(Mandatory = $true, ValueFromPipeline = $true)]
     [string[]] $Folders,
     [string] $EnvironmentVariableTarget = "Process")
 
@@ -23,6 +23,9 @@ begin
     $ErrorActionPreference = "Stop"
 
     Write-Verbose "Path environment variable target: $EnvironmentVariableTarget"
+
+    [bool] $isInputFromPipeline =
+        ($PSBoundParameters.ContainsKey("Folders") -eq $false)
 
     [int] $foldersAdded = 0
 
@@ -39,7 +42,16 @@ begin
 
 process
 {
-    $Folders | foreach {
+    If ($isInputFromPipeline -eq $true)
+    {
+        $items = $_
+    }
+    Else
+    {
+        $items = $Folders
+    }
+
+    $items | foreach {
         [string] $folder = $_
 
         [bool] $isFolderInList = $false
