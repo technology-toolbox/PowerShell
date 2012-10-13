@@ -58,8 +58,8 @@ process
         $hostNameList | foreach {
             If ([string]::Compare($_, $hostName, $true) -eq 0)
             {
-                Write-Host ("The host name ($hostName) is already specified" `
-                    + " in the BackConnectionHostNames list.")
+                Write-Verbose ("The host name ($hostName) is already" `
+                    + " specified in the BackConnectionHostNames list.")
 
                 $isHostNameInList = $true
                 return
@@ -68,7 +68,7 @@ process
 
         If ($isHostNameInList -eq $false)
         {
-            Write-Host ("Adding host name ($hostName) to" `
+            Write-Verbose ("Adding host name ($hostName) to" `
                 + " BackConnectionHostNames list...")
 
             $hostNameList.Add($hostName) | Out-Null
@@ -82,8 +82,8 @@ end
 {
     If ($hostNamesAdded -eq 0)
     {
-        Write-Host ("No changes to the BackConnectionHostNames value are" `
-            + " necessary.")
+        Write-Verbose ("No changes to the BackConnectionHostNames registry" `
+            + " value are necessary.")
 
         return
     }
@@ -114,7 +114,7 @@ end
                 -Value $delimitedHostNames | Out-Null
         }
 
-        Write-Host -Fore Green ("Successfully added host names ($HostNames) to" `
-            + " BackConnectionHostNames.")
+        Write-Verbose ("Successfully added $hostNamesAdded host name(s) to" `
+            + " the BackConnectionHostNames registry value.")
     }
 }
