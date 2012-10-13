@@ -36,7 +36,7 @@ begin
             $hostNameList.Add($_) | Out-Null
         }
 
-        # Return an array (containing the ArrayList) to avoid issue with
+        # HACK: Return an array (containing the ArrayList) to avoid issue with
         # PowerShell returning a string (when registry value only contains one
         # item)
         return ,$hostNameList
@@ -67,7 +67,12 @@ begin
 
         $registryValue = $registryKey.GetValue("BackConnectionHostNames")
 
-        If ($registryValue -eq $null)
+        If ($hostNameList.Count -eq 0)
+        {
+            Remove-ItemProperty -Path $registryPath `
+                -Name BackConnectionHostNames
+        }
+        ElseIf ($registryValue -eq $null)
         {
             New-ItemProperty -Path $registryPath -Name BackConnectionHostNames `
                 -PropertyType MultiString -Value $delimitedHostNames | Out-Null
