@@ -9,21 +9,26 @@ not specified.
 
 .EXAMPLE
 .\Get-PathFolders.ps1
-
-Folder
-------
 C:\Windows\system32\WindowsPowerShell\v1.0\
 C:\Windows\system32
 C:\Windows
 C:\Windows\System32\Wbem
 ...
 
-.EXAMPLE
-.\Get-PathFolders.ps1 "User"
+Description
+-----------
+The output from this example lists each folder in the Path environment variable
+for the current process.
 
-Folder
-------
+.EXAMPLE
+.\Get-PathFolders.ps1 User
 C:\NotBackedUp\Public\Toolbox
+
+Description
+-----------
+The output from this example assumes one folder
+("C:\NotBackedUp\Public\Toolbox") has previously been added to the user's Path
+environment variable.
 #>
 param(
     [string] $EnvironmentVariableTarget = "Process")
@@ -31,17 +36,11 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-[string[]] $path = [Environment]::GetEnvironmentVariable(
+[string[]] $pathFolders = [Environment]::GetEnvironmentVariable(
     "Path",
     $EnvironmentVariableTarget) -Split ";"
 
-If ($path -ne $null)
+If ($pathFolders -ne $null)
 {
-    $path | foreach {
-        $properties = @{
-            Folder = $_
-        }
-
-        New-Object PSObject -Property $properties
-    }
+    Write-Output $pathFolders
 }
