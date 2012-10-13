@@ -52,7 +52,7 @@ remove the specified hostnames ("foo" and "bar"):
 This script must be run with administrator privileges.
 #>
 param(
-    [parameter(Mandatory=$true)]
+    [parameter(Mandatory = $true, ValueFromPipeline = $true)]
     [string[]] $Hostnames
 )
 
@@ -201,6 +201,9 @@ begin
         Write-Host -Fore Green "Successfully updated hosts file."
     }
 
+    [bool] $isInputFromPipeline =
+        ($PSBoundParameters.ContainsKey("Hostnames") -eq $false)
+
     [int] $pendingUpdates = 0
 
     [Collections.ArrayList] $hostsEntries = ParseHostsFile
@@ -208,7 +211,16 @@ begin
 
 process
 {
-    $Hostnames | foreach {
+    If ($isInputFromPipeline -eq $true)
+    {
+        $items = $_
+    }
+    Else
+    {
+        $items = $Hostnames
+    }
+
+    $items | foreach {
         [string] $hostname = $_
 
         for ([int] $i = 0; $i -lt $hostsEntries.Count; $i++)
