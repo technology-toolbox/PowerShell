@@ -13,13 +13,16 @@ http://support.microsoft.com/kb/896861
 .\Add-BackConnectionHostNames.ps1 fabrikam-local, www-local.fabrikam.com
 #>
 param(
-    [parameter(Mandatory=$true)]
+    [parameter(Mandatory = $true, ValueFromPipeline = $true)]
     [string[]] $HostNames)
 
 begin
 {
     Set-StrictMode -Version Latest
     $ErrorActionPreference = "Stop"
+
+    [bool] $isInputFromPipeline =
+        ($PSBoundParameters.ContainsKey("HostNames") -eq $false)
 
     [int] $hostNamesAdded = 0
 
@@ -38,7 +41,16 @@ begin
 
 process
 {
-    $HostNames | foreach {
+    If ($isInputFromPipeline -eq $true)
+    {
+        $items = $_
+    }
+    Else
+    {
+        $items = $HostNames
+    }
+
+    $items | foreach {
         [string] $hostName = $_
 
         [bool] $isHostNameInList = $false
