@@ -21,22 +21,70 @@ begin
     Set-StrictMode -Version Latest
     $ErrorActionPreference = "Stop"
 
+    function GetBackConnectionHostNameList
+    {
+        [Collections.ArrayList] $hostNameList = New-Object Collections.ArrayList
+
+        [string] $registryPath =
+            "HKLM:\System\CurrentControlSet\Control\Lsa\MSV1_0"
+
+        $registryKey = Get-Item -Path $registryPath
+
+        $registryValue = $registryKey.GetValue("BackConnectionHostNames")
+
+        $registryValue -Split [System.Environment]::NewLine | foreach {
+            $hostNameList.Add($_) | Out-Null
+        }
+
+        # Return an array (containing the ArrayList) to avoid issue with
+        # PowerShell returning a string (when registry value only contains one
+        # item)
+        return ,$hostNameList
+    }
+
+    function SetBackConnectionHostNamesRegistryValue(
+        [Collections.ArrayList] $hostNameList =
+            $(Throw "Value cannot be null: hostNameList"))
+    {
+        $hostNameList.Sort()
+
+        for ([int] $i = 0; $i -lt $hostNameList.Count; $i++)
+        {
+            If ([string]::IsNullOrEmpty($hostNameList[$i]) -eq $true)
+            {
+                $hostNameList.RemoveAt($i)
+                $i--
+            }
+        }
+
+        [string] $delimitedHostNames =
+            $hostNameList -Join [System.Environment]::NewLine
+
+        [string] $registryPath =
+            "HKLM:\System\CurrentControlSet\Control\Lsa\MSV1_0"
+
+        $registryKey = Get-Item -Path $registryPath
+
+        $registryValue = $registryKey.GetValue("BackConnectionHostNames")
+
+        If ($registryValue -eq $null)
+        {
+            New-ItemProperty -Path $registryPath -Name BackConnectionHostNames `
+                -PropertyType MultiString -Value $delimitedHostNames | Out-Null
+        }
+        Else
+        {
+            Set-ItemProperty -Path $registryPath -Name BackConnectionHostNames `
+                -Value $delimitedHostNames | Out-Null
+        }
+    }
+
     [bool] $isInputFromPipeline =
         ($PSBoundParameters.ContainsKey("HostNames") -eq $false)
 
     [int] $hostNamesAdded = 0
 
-    [Collections.ArrayList] $hostNameList = New-Object Collections.ArrayList
-
-    [string] $registryPath = "HKLM:\System\CurrentControlSet\Control\Lsa\MSV1_0"
-
-    $registryKey = Get-Item -Path $registryPath
-
-    $registryValue = $registryKey.GetValue("BackConnectionHostNames")
-
-    $registryValue -Split [System.Environment]::NewLine | foreach {
-        $hostNameList.Add($_) | Out-Null
-    }
+    [Collections.ArrayList] $hostNameList = GetBackConnectionHostNameList
 }
 
 process
@@ -87,34 +135,9 @@ end
 
         return
     }
-    Else
-    {
-        $hostNameList.Sort()
 
-        for ([int] $i = 0; $i -lt $hostNameList.Count; $i++)
-        {
-            If ([string]::IsNullOrEmpty($hostNameList[$i]) -eq $true)
-            {
-                $hostNameList.RemoveAt($i)
-                $i--
-            }
-        }
+    SetBackConnectionHostNamesRegistryValue $hostNameList
 
-        [string] $delimitedHostNames =
-            $hostNameList -Join [System.Environment]::NewLine
-
-        If ($registryValue -eq $null)
-        {
-            New-ItemProperty -Path $registryPath -Name BackConnectionHostNames `
-                -PropertyType MultiString -Value $delimitedHostNames | Out-Null
-        }
-        Else
-        {
-            Set-ItemProperty -Path $registryPath -Name BackConnectionHostNames `
-                -Value $delimitedHostNames | Out-Null
-        }
-
-        Write-Verbose ("Successfully added $hostNamesAdded host name(s) to" `
-            + " the BackConnectionHostNames registry value.")
-    }
+    Write-Verbose ("Successfully added $hostNamesAdded host name(s) to" `
+        + " the BackConnectionHostNames registry value.")
 }
