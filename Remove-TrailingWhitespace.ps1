@@ -14,10 +14,10 @@ quotation marks tell Windows PowerShell not to interpret any characters as
 escape sequences.
 
 .EXAMPLE
-Remove-TrailingWhitespace C:\MyClass.cs
+Remove-TrailingWhitespace.ps1 C:\MyClass.cs
 
 .EXAMPLE
-Remove-TrailingWhitespace *.ps1
+Remove-TrailingWhitespace.ps1 *.ps1
 #>
 [CmdletBinding(DefaultParameterSetName="Path")]
 param(
@@ -26,7 +26,8 @@ param(
     [string[]] $Path,
     [parameter(Position = 0, Mandatory = $false,
         ParameterSetName = "LiteralPath")]
-    [string[]] $LiteralPath
+    [string[]] $LiteralPath,
+    [switch] $RemoveBlankLines
 )
 
 begin
@@ -43,7 +44,7 @@ begin
     }
 
     function GetEncodingShortName(
-        [Text.Encoding] $encoding)
+        [System.Text.Encoding] $encoding)
     {
         If ($encoding -eq [Text.Encoding]::Default)
         {
@@ -86,13 +87,14 @@ process
         Write-Progress -Activity $MyInvocation.MyCommand `
             -Status "Processing item: $item"
 
-        [Text.Encoding] $encoding = & .\Get-FileEncoding.ps1 $item
+        [System.Text.Encoding] $encoding = & .\Get-FileEncoding.ps1 $item
 
         [string] $encodingShortName = GetEncodingShortName $encoding
 
         Write-Debug "Encoding: $encodingShortName"
 
         [int] $linesModified = 0
+        [int] $linesRemoved = 0
 
         $trimmedContent = Get-Content $item | ForEach-Object {
             [string] $line = $_
@@ -103,16 +105,29 @@ process
                 $linesModified++
             }
 
-            Write-Output $trimmedLine
+            If ($RemoveBlankLines -eq $true `
+                -and [string]::IsNullOrEmpty($trimmedLine) -eq $true)
+            {
+                $linesRemoved++
+            }
+            Else
+            {
+                Write-Output $trimmedLine
+            }
         }
 
-        If ($linesModified -eq 0)
+        If ($linesModified -gt 0 -or $linesRemoved -gt 0)
+        {
+            $trimmedContent | Out-File $item -Encoding $encodingShortName
+        }
+        ElseIf ($linesModified -eq 0)
         {
             Write-Debug "The file does not contain any trailing whitespace."
         }
-        Else
+        ElseIf ($RemoveBlankLines -eq $true `
+            -and $linesRemoved -eq 0)
         {
-            $trimmedContent | Out-File $item -Encoding $encodingShortName
+            Write-Debug "The file does not contain any blank lines."
         }
     }
 }
