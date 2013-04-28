@@ -81,13 +81,17 @@ process
         }
     }
 
+    $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+
+    $getFileEncodingScriptPath = Join-Path $scriptPath "Get-FileEncoding.ps1"
+
     $items | foreach {
         [string] $item = $_
 
         Write-Progress -Activity $MyInvocation.MyCommand `
             -Status "Processing item: $item"
 
-        [System.Text.Encoding] $encoding = & .\Get-FileEncoding.ps1 $item
+        [System.Text.Encoding] $encoding = & $getFileEncodingScriptPath $item
 
         [string] $encodingShortName = GetEncodingShortName $encoding
 
