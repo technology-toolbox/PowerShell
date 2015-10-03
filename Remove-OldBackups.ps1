@@ -22,7 +22,7 @@ Process
       ForEach-Object {
         [string] $file = $_.FullName
 
-        If ($BackupFileExtensions.Contains($_.Extension) -eq $true)
+        If ($BackupFileExtensions -contains $_.Extension)
         {
             Write-Host "$(Get-TimeStamp): Deleting $file...`r`n"
             Remove-Item $file -Force
