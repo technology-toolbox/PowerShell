@@ -1,6 +1,7 @@
 Param(
   [string] $Path = "Z:\NotBackedUp\Backups",
-  [int] $NumberOfDaysToKeep = 14)
+  [int] $NumberOfDaysToKeep = 14,
+  [string[]] $BackupFileExtensions = (".bak", ".trn"))
 
 Begin
 {
@@ -21,7 +22,15 @@ Process
       ForEach-Object {
         [string] $file = $_.FullName
 
-        Write-Host "$(Get-TimeStamp): Deleting $file...`r`n"
-        Remove-Item $file -Force
+        If ($BackupFileExtensions.Contains($_.Extension) -eq $true)
+        {
+            Write-Host "$(Get-TimeStamp): Deleting $file...`r`n"
+            Remove-Item $file -Force
+        }
+        Else
+        {
+            Write-Host ("$(Get-TimeStamp): Skipping file ($file) because it" `
+                + " does not match the list of backup file extensions.`r`n")
+        }
       }
 }
