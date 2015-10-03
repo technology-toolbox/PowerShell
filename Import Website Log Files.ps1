@@ -34,7 +34,7 @@ CREATE TABLE Staging.WebsiteLog
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-Import-Module Pscx -EA 0
+Import-Module .\Pscx -EA 0
 
 function ArchiveLogFiles(
     [string] $httpLogPath)
@@ -93,7 +93,7 @@ function ImportLogFiles(
         return
     }
 
-    [string] $logParser
+    [string] $logParser = $null
 
     If ($env:PROCESSOR_ARCHITECTURE -eq "x86")
     {
