@@ -85,6 +85,13 @@ process
 
         While ($vm.State -ne "Off")
         {
+            $vhdActualSizeBytes = (Get-VHD $vhdPath).FileSize
+
+            If ($vhdActualSizeBytes -eq $VhdSizeBytes)
+            {
+                Write-Warning "$(Get-TimeStamp): VHD has been expanded to maximum size."
+            }
+
             Write-Verbose "Temporary VM ($vmName) is running."
             Start-Sleep 5
         }
