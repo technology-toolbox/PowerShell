@@ -7,6 +7,7 @@ param(
     [Parameter(Mandatory=$true)]
     [string] $IsoPath,
     [long] $VhdSizeBytes = 32GB,
+    [switch] $FixedVhd,
     [string] $VmRootPath = "C:\NotBackedUp\VMs",
     [long] $MemoryStartupBytes = 4GB,
     [string] $SwitchName = "Virtual LAN 2 - 192.168.10.x",
@@ -43,6 +44,7 @@ process
 {
     Write-Debug "IsoPath: $IsoPath"
     Write-Debug "VhdSizeBytes: $VhdSizeBytes"
+    Write-Debug "FixedVhd: $FixedVhd"
     Write-Debug "VmRootPath: $VmRootPath"
     Write-Debug "MemoryStartupBytes: $MemoryStartupBytes"
     Write-Debug "SwitchName: $SwitchName"
@@ -69,7 +71,14 @@ process
 
         $vhdPath = "$VmRootPath\$vmName\Virtual Hard Disks\$vmName.vhdx"
 
-        New-VHD -Path $vhdPath -SizeBytes $VhdSizeBytes | Out-Null
+        If ($FixedVhd)
+        {
+            New-VHD -Path $vhdPath -SizeBytes $VhdSizeBytes -Fixed | Out-Null
+        }
+        Else
+        {
+            New-VHD -Path $vhdPath -SizeBytes $VhdSizeBytes | Out-Null
+        }
 
         Add-VMHardDiskDrive -VMName $vmName -Path $vhdPath
 
@@ -87,7 +96,8 @@ process
         {
             $vhdActualSizeBytes = (Get-VHD $vhdPath).FileSize
 
-            If ($vhdActualSizeBytes -eq $VhdSizeBytes)
+            If (-not $FixedVhd -and
+                $vhdActualSizeBytes -eq $VhdSizeBytes)
             {
                 Write-Warning "$(Get-TimeStamp): VHD has been expanded to maximum size."
             }
