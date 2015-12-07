@@ -84,10 +84,16 @@ process
         $vm = Get-VM -Name $vmName
 
         While ($vm.State -ne "Off")
-        { 
+        {
             Write-Verbose "Temporary VM ($vmName) is running."
             Start-Sleep 5
         }
+
+        $vhdActualSizeBytes = (Get-VHD $vhdPath).FileSize
+
+        $vhdActualSizeGB = [Math]::Round($vhdActualSizeBytes / 1GB, 1)
+
+        Write-Host "$(Get-TimeStamp): Final VHD size: $vhdActualSizeGB GB"
 
         Write-Host -NoNewLine `
             "$(Get-TimeStamp): Temporary VM ($vmName) lifespan: "
