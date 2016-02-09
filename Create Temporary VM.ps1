@@ -10,7 +10,7 @@ param(
     [switch] $FixedVhd,
     [string] $VmRootPath = "C:\NotBackedUp\VMs",
     [long] $MemoryStartupBytes = 4GB,
-    [string] $SwitchName = "Virtual LAN 2 - 192.168.10.x",
+    [string] $SwitchName = "Production",
     [byte] $ProcessorCount = 2,
     [switch] $Force)
 
