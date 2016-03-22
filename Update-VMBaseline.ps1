@@ -3,9 +3,8 @@
     ConfirmImpact="High")]
 Param(
     [Parameter(Mandatory = $True, Position = 0)]
-    [string] $VMHost,
-    [Parameter(Mandatory = $True, Position = 1)]
-    [string] $VMName,
+    [string] $Name,
+    [string] $ComputerName = $env:COMPUTERNAME,
     [bool] $StopVMFirst = $True)
 
 Begin
@@ -39,13 +38,13 @@ Begin
 
 Process
 {
-    If ($PSCmdlet.ShouldProcess($VMName) -eq $True)
+    If ($PSCmdlet.ShouldProcess($Name) -eq $True)
     {
-        [string] $activity = "Update virtual machine baseline ($VMName)"
+        [string] $activity = "Update virtual machine baseline ($Name)"
 
         StartActivity $activity
 
-        $vm = Get-VM -Name $VMName -ComputerName $VMHost
+        $vm = Get-VM -Name $Name -ComputerName $ComputerName
 
         If ($StopVMFirst -eq $true)
         {
@@ -53,13 +52,13 @@ Process
             {
                 UpdateProgress `
                     -Activity $activity `
-                    -Status "Stopping virtual machine ($VMName)..."
+                    -Status "Stopping virtual machine ($Name)..."
 
-                Stop-VM -Name $VMName -ComputerName $VMHost
+                Stop-VM -Name $Name -ComputerName $ComputerName
             }
         }
     
-        $snapshot = Get-VMSnapshot -ComputerName $VMHost -VMName $VMName |
+        $snapshot = Get-VMSnapshot -ComputerName $ComputerName -VMName $Name |
             Sort-Object CreationTime |
             Select-Object -Last 1
 
@@ -70,12 +69,12 @@ Process
             UpdateProgress `
                 -Activity $activity `
                 -Status ("Removing checkpoint ($snapshotName) for virtual" `
-                    + " machine ($VMName)...")
+                    + " machine ($Name)...")
 
             Remove-VMSnapshot `
-                -VMName $VMName `
+                -VMName $Name `
                 -Name $snapshotName `
-                -ComputerName $VMHost
+                -ComputerName $ComputerName
 
             UpdateProgress `
                 -Activity $activity `
@@ -86,9 +85,9 @@ Process
             UpdateProgress `
                 -Activity $activity `
                 -Status ("Waiting for merge to complete on virtual machine" `
-                    + " ($VMName)...")
+                    + " ($Name)...")
 
-            while (Get-VM -Name $VMName -ComputerName $VMHost |
+            while (Get-VM -Name $Name -ComputerName $ComputerName |
                 Where Status -eq "Merging disks")
                 {
                     Start-Sleep -Seconds 10
@@ -102,16 +101,16 @@ Process
         UpdateProgress `
             -Activity $activity `
             -Status ("Creating checkpoint ($snapshotName) for virtual machine" `
-                + " ($VMName)...")
+                + " ($Name)...")
 
         Checkpoint-VM `
-            -Name $VMName `
+            -Name $Name `
             -SnapshotName $snapshotName `
-            -ComputerName $VMHost
+            -ComputerName $ComputerName    
 
         UpdateProgress `
             -Activity $activity `
-            -Status "Successfully updated virtual machine baseline ($VMName)" `
+            -Status "Successfully updated virtual machine baseline ($Name)" `
             -Completed
     }
 }
