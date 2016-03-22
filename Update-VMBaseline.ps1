@@ -59,45 +59,45 @@ Process
             }
         }
     
-	    $snapshot = Get-VMSnapshot -ComputerName $VMHost -VMName $VMName |
+        $snapshot = Get-VMSnapshot -ComputerName $VMHost -VMName $VMName |
             Sort-Object CreationTime |
             Select-Object -Last 1
 
-	    If ($snapshot)
-	    {
-		    $snapshotName = $snapshot.Name
-		
-	        UpdateProgress `
+        If ($snapshot)
+        {
+            $snapshotName = $snapshot.Name
+        
+            UpdateProgress `
                 -Activity $activity `
                 -Status ("Removing checkpoint ($snapshotName) for virtual" `
                     + " machine ($VMName)...")
 
-	        Remove-VMSnapshot `
+            Remove-VMSnapshot `
                 -VMName $VMName `
                 -Name $snapshotName `
                 -ComputerName $VMHost
-	
-	        UpdateProgress `
+
+            UpdateProgress `
                 -Activity $activity `
                 -Status "Waiting a few seconds for merge to start..."
 
-	        Start-Sleep -Seconds 5
-	
-	        UpdateProgress `
+            Start-Sleep -Seconds 5
+    
+            UpdateProgress `
                 -Activity $activity `
                 -Status ("Waiting for merge to complete on virtual machine" `
                     + " ($VMName)...")
 
-	        while (Get-VM -Name $VMName -ComputerName $VMHost |
+            while (Get-VM -Name $VMName -ComputerName $VMHost |
                 Where Status -eq "Merging disks")
-            {
-		        Start-Sleep -Seconds 10
-	        }
-	    }
-	    Else
-	    {
-		    $snapshotName = "Baseline"
-	    }
+                {
+                    Start-Sleep -Seconds 10
+                }
+        }
+        Else
+        {
+            $snapshotName = "Baseline"
+        }
     
         UpdateProgress `
             -Activity $activity `
