@@ -1,3 +1,4 @@
+[CmdletBinding(SupportsShouldProcess=$true)]
 Param(
   [string] $Path = "Z:\",
   [int] $NumberOfDaysToKeep = 14,
