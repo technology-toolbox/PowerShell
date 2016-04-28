@@ -1,5 +1,5 @@
 Param(
-  [string] $Path = "Z:\NotBackedUp\Backups",
+  [string] $Path = "Z:\",
   [int] $NumberOfDaysToKeep = 14,
   [string[]] $BackupFileExtensions = (".bak", ".trn"))
 
