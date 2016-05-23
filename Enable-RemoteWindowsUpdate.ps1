@@ -54,11 +54,10 @@ Begin
         }
     }
 
-    Function EnsureFirewallRulesForRemoteWindowsUpdate()
+    Function EnsureFirewallRulesForRemoteWindowsUpdate(
+	    [string] $groupName)
     {
         # Configure firewall rules for POSHPAIG (http://poshpaig.codeplex.com/)
-
-        $groupName = 'Remote Windows Update'
 
         $ruleDescription = 'Allows remote auditing and installation of Windows' `
             + ' updates via POSHPAIG (http://poshpaig.codeplex.com/)'
@@ -320,7 +319,9 @@ Begin
 
 Process
 {
-    EnsureFirewallRulesForRemoteWindowsUpdate
+    $groupName = 'Remote Windows Update'
+
+    EnsureFirewallRulesForRemoteWindowsUpdate $groupName
 
     Write-Verbose 'Enabling firewall rules for remote Windows Update...'
 
@@ -331,7 +332,7 @@ Process
     Else
     {
         netsh advfirewall firewall set rule `
-            group="Remote Windows Update" new enable=yes | Out-Null
+            group="$groupName" new enable=yes | Out-Null
 
         If ($LASTEXITCODE -ne 0)
         {
