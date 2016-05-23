@@ -40,7 +40,7 @@ Begin
         If (AreFilewallPowerShellCmdletsAvailable -eq $true)
         {
             $rule = Get-NetFirewallRule `
-                -DisplayName $ruleName `
+                -DisplayName $ruleDisplayName `
                 -ErrorAction SilentlyContinue
 
             return ($rule -ne $null)
