@@ -22,11 +22,38 @@ Begin
 {
     Set-StrictMode -Version Latest
     $ErrorActionPreference = "Stop"
+
+    Function AreFilewallPowerShellCmdletsAvailable()
+    {
+        If ([Environment]::OSVersion.Version -ge (New-Object 'Version' 6,2))
+        {
+            return $true
+        }
+        Else
+        {
+            return $false
+        }
+    }
 }
 
 Process
 {
     Write-Verbose 'Disabling firewall rules for remote Windows Update...'
 
-    Disable-NetFirewallRule -Group 'Remote Windows Update'
+    $groupName = 'Remote Windows Update'
+
+    If (AreFilewallPowerShellCmdletsAvailable -eq $true)
+    {
+        Disable-NetFirewallRule -Group $groupName
+    }
+    Else
+    {
+        netsh advfirewall firewall set rule `
+            group="$groupName" new enable=no | Out-Null
+
+        If ($LASTEXITCODE -ne 0)
+        {
+            Throw "An error ocurred while disabling the firewall rules."
+        }
+    }
 }
