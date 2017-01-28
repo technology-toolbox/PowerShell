@@ -84,6 +84,12 @@ Process
 
     [string] $clusterObjectDN = $clusterObject.DistinguishedName
 
+    Write-Verbose ("Waiting a few seconds to avoid occasional issue where" `
+        + " the cluster object just created is not found when getting the" `
+        + " ACL using the distinguished name...")
+
+    Start-Sleep -Seconds 5
+
     $acl = Get-Acl -Path "AD:\$clusterObjectDN"
 
     $delegateAccount = New-Object System.Security.Principal.NTAccount($Delegate)
