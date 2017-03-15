@@ -89,7 +89,7 @@ Process
 
     $result | Add-Member `
         -MemberType NoteProperty `
-        -Name LastLogonTimeStamp `
+        -Name LastLogonTimestamp `
         -Value $lastLogontimeStamp
             
     $result | Add-Member `
