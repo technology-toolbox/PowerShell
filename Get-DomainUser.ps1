@@ -50,6 +50,17 @@ Process
         $mail = $user.Properties.mail[0]
     }
 
+    [Int64] $timestamp = 0
+    
+    If ($user.Properties.lastLogonTimestamp -ne $null)
+    {
+        $timestamp = $user.ConvertLargeIntegerToInt64(
+            $user.Properties.lastLogonTimestamp[0])
+    }
+    
+    [DateTime] $lastLogontimeStamp = [DateTime]::FromFileTime(
+        $timestamp)
+
     [Boolean] $enabled = -not [Boolean](
         $user.userAccountControl[0] -band $ACCOUNTDISABLE)
 
@@ -73,6 +84,11 @@ Process
         -Name EmailAddress `
         -Value $mail
 
+    $result | Add-Member `
+        -MemberType NoteProperty `
+        -Name LastLogonTimeStamp `
+        -Value $lastLogontimeStamp
+            
     $result | Add-Member `
         -MemberType NoteProperty `
         -Name Enabled `
