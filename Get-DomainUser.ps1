@@ -67,6 +67,9 @@ Process
     [Boolean] $passwordExpired = [Boolean](
         $user.userAccountControl[0] -band $PASSWORD_EXPIRED)
 
+    $userSid  = New-Object System.Security.Principal.SecurityIdentifier(
+        $user.objectSid[0], 0)
+
     $result = New-Object -TypeName PSObject
 
     $result | Add-Member `
@@ -98,6 +101,11 @@ Process
         -MemberType NoteProperty `
         -Name PasswordExpired `
         -Value $passwordExpired
+
+    $result | Add-Member `
+        -MemberType NoteProperty `
+        -Name SID `
+        -Value $userSid.ToString()
 
     $result
 }
