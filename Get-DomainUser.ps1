@@ -43,6 +43,13 @@ Process
         $displayName = $user.Properties.displayName[0]
     }
 
+    [String] $mail= $null
+    
+    If ($user.Properties.mail -ne $null)
+    {
+        $mail = $user.Properties.mail[0]
+    }
+
     [Boolean] $enabled = -not [Boolean](
         $user.userAccountControl[0] -band $ACCOUNTDISABLE)
 
@@ -60,6 +67,11 @@ Process
         -MemberType NoteProperty `
         -Name DisplayName `
         -Value $displayName
+
+    $result | Add-Member `
+        -MemberType NoteProperty `
+        -Name EmailAddress `
+        -Value $mail
 
     $result | Add-Member `
         -MemberType NoteProperty `
