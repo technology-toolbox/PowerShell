@@ -35,7 +35,14 @@ Process
     $user = [adsi]$searchResults[0].Properties.adspath[0]
 
     [String] $samAccountName = $user.sAMAccountName[0]
-    [String] $displayName = $user.properties.displayname[0]
+
+    [String] $displayName = $null
+
+    If ($user.Properties.displayName -ne $null)
+    {
+        $displayName = $user.Properties.displayName[0]
+    }
+
     [Boolean] $enabled = -not [Boolean](
         $user.userAccountControl[0] -band $ACCOUNTDISABLE)
 
