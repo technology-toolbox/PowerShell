@@ -36,6 +36,8 @@ Process
 
     [String] $samAccountName = $user.sAMAccountName[0]
 
+    [String] $userPrincipalName = $user.userPrincipalName[0]
+
     [String] $displayName = $null
 
     If ($user.Properties.displayName -ne $null)
@@ -74,8 +76,13 @@ Process
 
     $result | Add-Member `
         -MemberType NoteProperty `
-        -Name LoginName `
+        -Name LogonName `
         -Value $samAccountName
+
+    $result | Add-Member `
+        -MemberType NoteProperty `
+        -Name UserPrincipalName `
+        -Value $userPrincipalName
 
     $result | Add-Member `
         -MemberType NoteProperty `
