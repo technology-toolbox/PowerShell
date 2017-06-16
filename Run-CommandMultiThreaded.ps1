@@ -93,7 +93,7 @@ Begin{
     $RunspacePool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads, $ISS, $Host)
     $RunspacePool.Open()
         
-    If ($(Get-Command | Select-Object Name) -match $Command){
+    If ($(Get-Command | Select-Object Name) -match [RegEx]::Escape($Command)){
         $Code = $Null
     }Else{
         $OFS = "`r`n"
