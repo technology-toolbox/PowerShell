@@ -46,7 +46,7 @@
 #
 #.PARAMETER MaxThreads
 #    This is the maximum number of threads to run at any given time.  If resources are too congested try lowering
-#    this number.  The default value is 20.
+#    this number.  The default value is $env:NUMBER_OF_PROCESSORS.
 #    
 #.PARAMETER SleepTimer
 #    This is the time between cycles of the child process detection cycle.  The default value is 200ms.  If CPU 
