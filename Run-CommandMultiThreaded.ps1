@@ -81,7 +81,7 @@
 Param($Command = $(Read-Host "Enter the script file"), 
     [Parameter(ValueFromPipeline=$true,ValueFromPipelineByPropertyName=$true)]$ObjectList,
     $InputParam = $Null,
-    $MaxThreads = 20,
+    $MaxThreads = $env:NUMBER_OF_PROCESSORS,
     $SleepTimer = 200,
     $MaxResultTime = 120,
     [HashTable]$AddParam = @{},
