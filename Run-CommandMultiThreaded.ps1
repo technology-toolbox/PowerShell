@@ -53,6 +53,9 @@
 #    utilization is high then you can consider increasing this delay.  If the child script takes a long time to
 #    run, then you might increase this value to around 1000 (or 1 second in the detection cycle).
 #
+#.PARAMETER SnapIns
+#    This allows you to add PowerShell snap-ins to the runspace used to execute commands in parallel.
+#
 #    
 #.EXAMPLE
 #    Both of these will execute the script named ServerInfo.ps1 and provide each of the server names in AllServers.txt
@@ -85,11 +88,18 @@ Param($Command = $(Read-Host "Enter the script file"),
     $SleepTimer = 200,
     $MaxResultTime = 120,
     [HashTable]$AddParam = @{},
-    [Array]$AddSwitch = @()
+    [Array]$AddSwitch = @(),
+    [String[]] $SnapIns = @()
 )
 
 Begin{
     $ISS = [system.management.automation.runspaces.initialsessionstate]::CreateDefault()
+
+    $SnapIns |
+        ForEach-Object {
+            [void]$ISS.ImportPSSnapIn($_, [ref]$null)
+        }
+
     $RunspacePool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads, $ISS, $Host)
     $RunspacePool.Open()
         
