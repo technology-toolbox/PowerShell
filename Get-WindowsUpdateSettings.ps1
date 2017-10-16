@@ -1,16 +1,20 @@
 [cmdletbinding()]
 Param(
-[switch]$viaRegistry=$false
+    [switch]$viaRegistry=$false
 )
 Begin {
+    Function Get-WUSettings {
+    Param(
+        [switch]$viaRegistry=$false
+    )
+
     # Get the Operating system
     $OSVersion = [environment]::OSVersion.Version
     # Initialize object
     $WshShell = New-Object -ComObject Wscript.Shell
     $polkey = 'HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
     $stdkey = 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update'
-}
-Process {
+
     if ($viaRegistry) {
         try {
             $AUEnabled = $WshShell.RegRead("$polkey\NoAutoUpdate")
@@ -180,5 +184,11 @@ Process {
         # return
         $obj
     }
+    }
 }
-End {}
+Process {
+	Get-WUSettings -viaRegistry:([bool]::Parse($viaRegistry))
+}
+End {
+
+}
