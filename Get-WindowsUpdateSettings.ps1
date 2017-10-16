@@ -1,6 +1,6 @@
 [cmdletbinding()]
 Param(
-    [switch]$viaRegistry=$false
+    [switch] $TryComObjectFirst
 )
 Begin {
     Function Get-WUSettings {
@@ -187,8 +187,12 @@ Begin {
     }
 }
 Process {
-	Get-WUSettings -viaRegistry:([bool]::Parse($viaRegistry))
+    If ($TryComObjectFirst) {
+        Get-WUSettings
+    }
+    Else {
+        Get-WUSettings -viaRegistry
+    }
 }
 End {
-
 }
