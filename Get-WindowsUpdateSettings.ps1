@@ -42,7 +42,12 @@ Process {
             $IncludeRecommendedUpdates = $WshShell.RegRead("$polkey\IncludeRecommendedUpdates")
         } catch {
             # if the value is absent we get it from
-            $IncludeRecommendedUpdates = $WshShell.RegRead("$stdkey\IncludeRecommendedUpdates")
+            try {
+                $IncludeRecommendedUpdates = $WshShell.RegRead("$stdkey\IncludeRecommendedUpdates")
+            }
+            catch {
+                $IncludeRecommendedUpdates = 0
+            }
         }
         Switch ($IncludeRecommendedUpdates) {
             0 {$GetRecommendedUpdates = $false}
