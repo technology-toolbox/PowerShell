@@ -1,4 +1,3 @@
-Function Get-WUSettings {
 [cmdletbinding()]
 Param(
 [switch]$viaRegistry=$false
@@ -178,4 +177,3 @@ Process {
     }
 }
 End {}
-}
