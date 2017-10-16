@@ -74,36 +74,32 @@ Begin {
             'Automatic Updates Notification' = $AUNotificationLevel;
             'Receive recommended udpates' = $GetRecommendedUpdates;
         }
-        if ($OSVersion -lt [version]'6.2') {
+        try {
+            $ScheduledInstallDay  = $WshShell.RegRead("$polkey\ScheduledInstallDay")
+            $ScheduledInstallTime = $WshShell.RegRead("$polkey\ScheduledInstallTime")
+        } catch {
             try {
-                $ScheduledInstallDay  = $WshShell.RegRead("$polkey\ScheduledInstallDay")
-                $ScheduledInstallTime = $WshShell.RegRead("$polkey\ScheduledInstallTime")
+                $ScheduledInstallDay  = $WshShell.RegRead("$stdkey\ScheduledInstallDay")
+                $ScheduledInstallTime = $WshShell.RegRead("$stdkey\ScheduledInstallTime")
             } catch {
-                try {
-                    $ScheduledInstallDay  = $WshShell.RegRead("$stdkey\ScheduledInstallDay")
-                    $ScheduledInstallTime = $WshShell.RegRead("$stdkey\ScheduledInstallTime")
-                } catch {
-                    # Absent = Every Day @3 AM but I prefer to leave it blank in the returned object
-                }
+                # Absent = Every Day @3 AM but I prefer to leave it blank in the returned object
             }
-            Switch ($ScheduledInstallDay) {
-                0 {$InstallDay = 'Every Day'}
-                1 {$InstallDay = 'Every Sunday'}
-                2 {$InstallDay = 'Every Monday'}
-                3 {$InstallDay = 'Every Tuesday'}
-                4 {$InstallDay = 'Every Wednesday'}
-                5 {$InstallDay = 'Every Thursday'}
-                6 {$InstallDay = 'Every Friday'}
-                7 {$InstallDay = 'Every Saturday'}
-            }
-            if ($ScheduledInstallTime) {
-                $InstallTime = New-TimeSpan -Hours $ScheduledInstallTime
-            }
-            $obj | Add-Member -MemberType NoteProperty -Name 'Install Frequency' -Value $InstallDay
-            $obj | Add-Member -MemberType NoteProperty -Name 'Install Time' -Value $InstallTime
-        } else {
-            # These properties don't exist anymore on Windows 8
         }
+        Switch ($ScheduledInstallDay) {
+            0 {$InstallDay = 'Every Day'}
+            1 {$InstallDay = 'Every Sunday'}
+            2 {$InstallDay = 'Every Monday'}
+            3 {$InstallDay = 'Every Tuesday'}
+            4 {$InstallDay = 'Every Wednesday'}
+            5 {$InstallDay = 'Every Thursday'}
+            6 {$InstallDay = 'Every Friday'}
+            7 {$InstallDay = 'Every Saturday'}
+        }
+        if ($ScheduledInstallTime -ne $null) {
+            $InstallTime = New-TimeSpan -Hours $ScheduledInstallTime
+        }
+        $obj | Add-Member -MemberType NoteProperty -Name 'Install Frequency' -Value $InstallDay
+        $obj | Add-Member -MemberType NoteProperty -Name 'Install Time' -Value $InstallTime
         # Add extra properties
         if ($UseWUServer) {
             try {
