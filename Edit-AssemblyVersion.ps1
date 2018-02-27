@@ -247,16 +247,22 @@ Process
     {
         If ([string]::IsNullOrEmpty($Build) -eq $true)
         {
-            $newVersion = [Version]::new($Major, $Minor)
+            $newVersion = New-Object `
+                -TypeName Version `
+                -ArgumentList $Major, $Minor
         }
         Else
         {
-            $newVersion = [Version]::new($Major, $Minor, $Build)
+            $newVersion = New-Object `
+                -TypeName Version `
+                -ArgumentList $Major, $Minor, $Build
         }
     }
     Else
     {
-        $newVersion = [Version]::new($Major, $Minor, $Build, $Revision)
+        $newVersion = New-Object `
+            -TypeName Version `
+            -ArgumentList $Major, $Minor, $Build, $Revision
     }
 
     CreateOutputObject `
