@@ -64,7 +64,7 @@ process
 	        -MemoryStartupBytes $MemoryStartupBytes `
 	        -SwitchName $SwitchName | Out-Null
 
-        Set-VM -VMName $vmName -ProcessorCount $ProcessorCount
+        Set-VM -VMName $vmName -ProcessorCount $ProcessorCount -StaticMemory
 
         New-Item -ItemType Directory "$VmRootPath\$vmName\Virtual Hard Disks" |
             Out-Null
