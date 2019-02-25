@@ -2,11 +2,12 @@
 
 Describe 'Get-SecureString Tests' {
     Context '[Default prompt]' {
+        [System.Security.SecureString] $securePassword = `
+            ConvertTo-SecureString -String '{password}' -AsPlainText -Force
+
         Mock Read-Host {return $securePassword}
 
         It 'Returns expected SecureString' {
-            [System.Security.SecureString] $securePassword = `
-                ConvertTo-SecureString -String '{password}' -AsPlainText -Force
 
             [System.Security.SecureString] $result = Get-SecureString
 
@@ -25,11 +26,12 @@ Describe 'Get-SecureString Tests' {
     }
 
     Context '[Custom prompt]' {
+        [System.Security.SecureString] $securePassword = `
+            ConvertTo-SecureString -String '{password}' -AsPlainText -Force
+
         Mock Read-Host {return $securePassword}
 
         It 'Uses custom prompt and returns expected SecureString' {
-            [System.Security.SecureString] $securePassword = `
-                ConvertTo-SecureString -String '{password}' -AsPlainText -Force
 
             [System.Security.SecureString] $result = `
                 Get-SecureString -Prompt 'Password'
