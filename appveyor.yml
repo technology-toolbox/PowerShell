@@ -1,3 +1,9 @@
 version: 0.1.{build}
 
 build: off
+
+install:
+  - cinst pester
+  
+test_script:
+  - ps: Invoke-Pester
