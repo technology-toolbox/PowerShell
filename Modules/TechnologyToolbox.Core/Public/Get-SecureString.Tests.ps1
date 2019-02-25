@@ -49,4 +49,22 @@ Describe 'Get-SecureString Tests' {
         Assert-MockCalled Read-Host -Times 1 -Exactly `
             -ParameterFilter { $Prompt -eq 'Password (confirm)' }
     }
+
+    Context '[Failed confirmation]' {
+        [System.Security.SecureString] $secureString1 = `
+            ConvertTo-SecureString -String '{foo}' -AsPlainText -Force
+
+        [System.Security.SecureString] $secureString2 = `
+            ConvertTo-SecureString -String '{bar}' -AsPlainText -Force
+
+        Mock Read-Host {return $secureString1} `
+            -ParameterFilter { $Prompt -eq 'Secure string' }
+
+        Mock Read-Host {return $secureString2} `
+            -ParameterFilter { $Prompt -eq 'Secure string (confirm)' }
+
+        It 'Throws when confirmation does not match' {
+            { Get-SecureString } | Should Throw 'Confirmation does not match.'
+        }
+    }
 }
