@@ -3,7 +3,23 @@ version: 0.1.{build}
 build: off
 
 install:
-  - ps: Install-Module Pester -Scope CurrentUser -Force -SkipPublisherCheck
+  - ps: Install-Module Pester, PSCodeCovIo -Scope CurrentUser -Force -SkipPublisherCheck
 
 test_script:
-  - ps: Invoke-Pester
+  # Run tests, upload test results and generate coverage report
+  - ps: |
+      $codeCoverageFiles = Get-ChildItem Modules\* -Include *.ps1, *.psm1 -Exclude *.Tests.* -Recurse
+      $testResultsFile = ".\TestsResults.xml"
+      $res = Invoke-Pester -OutputFormat NUnitXml -OutputFile $testResultsFile -PassThru -CodeCoverage $codeCoverageFiles -CodeCoverageOutputFile coverage.xml
+      (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path $testResultsFile))
+      Export-CodeCovIoJson -CodeCoverage $res.CodeCoverage -RepoRoot $pwd -Path coverage.json
+      if ($res.FailedCount -gt 0) {
+        throw "$($res.FailedCount) tests failed."
+      }
+
+after_test:
+  # Upload coverage report to codecov
+  - ps: |
+      $env:PATH = 'C:\msys64\usr\bin;' + $env:PATH
+      Invoke-WebRequest -Uri 'https://codecov.io/bash' -OutFile codecov.sh
+      bash codecov.sh -f coverage.json
