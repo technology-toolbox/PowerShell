@@ -3,7 +3,7 @@ version: 0.1.{build}
 build: off
 
 install:
-  - cinst pester
-  
+  - ps: Install-Module Pester -Scope CurrentUser -Force -SkipPublisherCheck
+
 test_script:
   - ps: Invoke-Pester
