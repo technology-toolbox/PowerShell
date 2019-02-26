@@ -9,7 +9,7 @@ Describe 'Write-ElapsedTime Tests' {
     $stopwatch.Stop()
 
     [string] $elapsedTime = [string]::Format(
-        "Elapsed time: {0:00}:{1:00}:{2:00}.{3:000}",
+        "{0:00}:{1:00}:{2:00}.{3:000}",
         $stopwatch.Elapsed.Hours,
         $stopwatch.Elapsed.Minutes,
         $stopwatch.Elapsed.Seconds,
@@ -25,7 +25,7 @@ Describe 'Write-ElapsedTime Tests' {
         Assert-MockCalled Write-Host -Times 1 -Exactly
         Assert-MockCalled Write-Host -Times 1 -Exactly `
             -ParameterFilter {
-                $Object -eq $elapsedTime -and
+                $Object -eq ('Elapsed time: ' + $elapsedTime) -and
                 $ForegroundColor -eq [System.ConsoleColor]::Cyan
             }
     }
@@ -44,7 +44,7 @@ Describe 'Write-ElapsedTime Tests' {
         Assert-MockCalled Write-Host -Times 1 -Exactly
         Assert-MockCalled Write-Host -Times 1 -Exactly `
             -ParameterFilter {
-                $Object -eq $elapsedTime -and
+                $Object -eq ('Elapsed time: ' + $elapsedTime) -and
                 $ForegroundColor -eq $foregroundColor
             }
     }

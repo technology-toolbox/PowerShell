@@ -5,7 +5,7 @@
             $(Throw "Value cannot be null: Stopwatch"),
         [System.ConsoleColor] $ForegroundColor =
             [System.ConsoleColor]::Cyan,
-        [string] $Prefix = $null,
+        [string] $Prefix = "Elapsed time: ",
         [string] $Suffix = $null)
 
     Begin {
@@ -25,6 +25,6 @@
 
         Write-Host `
             -ForegroundColor $ForegroundColor `
-            ($Prefix + "Elapsed time: $formattedTime" + $Suffix)
+            ($Prefix + $formattedTime + $Suffix)
     }
 }
