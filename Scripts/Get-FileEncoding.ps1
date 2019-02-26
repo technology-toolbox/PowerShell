@@ -72,7 +72,7 @@ $result = "Default"
 ## we know about.
 foreach($encodingLength in $encodingLengths | Sort -Descending)
 {
-    $bytes = Get-Content -LiteralPath $LiteralPath -Encoding byte -ReadCount $encodingLength
+    $bytes = Get-Content -LiteralPath $LiteralPath -Encoding byte -ReadCount $encodingLength -TotalCount $encodingLength
     $encoding = $encodings[$bytes -join '-']
 
     ## If we found an encoding that had the same preamble bytes,
