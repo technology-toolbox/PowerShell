@@ -19,12 +19,17 @@ Description
 In this example, the ArpRetryCount parameter has previously been set to 0 (to prevent
 NETLOGON 5719 errors).
 #>
+function Get-ArpRetryCount {
+    Begin {
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
+    }
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+    Process {
+        [string] $tcpIpParametersPath =
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"
 
-[string] $tcpIpParametersPath =
-    "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"
-
-Get-ItemProperty -Path $tcpIpParametersPath -Name ArpRetryCount |
-    ForEach-Object { $_.ArpRetryCount }
+        Get-ItemProperty -Path $tcpIpParametersPath -Name ArpRetryCount |
+            ForEach-Object { $_.ArpRetryCount }
+    }
+}
