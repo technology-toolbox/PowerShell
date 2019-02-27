@@ -28,35 +28,38 @@ NETLOGON 5719 errors when starting a virtual machine joined to a domain).
 .NOTES
 This script must be run with administrator privileges.
 #>
-param(
-    [parameter(Mandatory=$true)]
-    [int] $ArpRetryCount)
+function Set-ArpRetryCount {
+    param(
+        [parameter(Mandatory = $true)]
+        [int] $ArpRetryCount)
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+    Begin {
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
+    }
 
-[string] $tcpIpParametersPath =
-    "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"
+    Process {
+        [string] $tcpIpParametersPath =
+            "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"
 
-$tcpIpParametersKey = Get-Item -Path $tcpIpParametersPath
+        $tcpIpParametersKey = Get-Item -Path $tcpIpParametersPath
 
-$currentArpRetryCount = $tcpIpParametersKey.GetValue("ArpRetryCount")
+        $currentArpRetryCount = $tcpIpParametersKey.GetValue("ArpRetryCount")
 
-If ($currentArpRetryCount -eq $null)
-{
-    New-ItemProperty -Path $tcpIpParametersPath -Name ArpRetryCount `
-        -PropertyType DWord -Value $ArpRetryCount | Out-Null
+        If ($currentArpRetryCount -eq $null) {
+            New-ItemProperty -Path $tcpIpParametersPath -Name ArpRetryCount `
+                -PropertyType DWord -Value $ArpRetryCount | Out-Null
+        }
+        ElseIf ($currentArpRetryCount -eq $ArpRetryCount) {
+            Write-Verbose ("ArpRetryCount is already set to {0}." -f $ArpRetryCount)
+            return
+        }
+        Else {
+            Set-ItemProperty -Path $tcpIpParametersPath -Name ArpRetryCount `
+                -Value $ArpRetryCount | Out-Null
+        }
+
+        Write-Host -Fore Green ("Successfully set ArpRetryCount to {0}." `
+                -f $ArpRetryCount)
+    }
 }
-ElseIf ($currentArpRetryCount -eq $ArpRetryCount)
-{
-    Write-Verbose ("ArpRetryCount is already set to {0}." -f $ArpRetryCount)
-    Exit
-}
-Else
-{
-    Set-ItemProperty -Path $tcpIpParametersPath -Name ArpRetryCount `
-        -Value $ArpRetryCount | Out-Null
-}
-
-Write-Host -Fore Green ("Successfully set ArpRetryCount to {0}." `
-    -f $ArpRetryCount)
