@@ -29,41 +29,43 @@ additional files should be saved.
 .NOTES
 This script must be run with administrator privileges.
 #>
-param(
-    [parameter(Mandatory=$true)]
-    [int] $MaxPercentageOfDiskSpace)
+function Set-MaxPatchCacheSize {
+    param(
+        [parameter(Mandatory = $true)]
+        [int] $MaxPercentageOfDiskSpace)
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+    Begin {
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
+    }
 
-[int] $maxPatchCacheSize = $MaxPercentageOfDiskSpace
+    Process {
+        [int] $maxPatchCacheSize = $MaxPercentageOfDiskSpace
 
-[string] $installerPath = "HKLM:\Software\Policies\Microsoft\Windows\Installer"
+        [string] $installerPath = "HKLM:\Software\Policies\Microsoft\Windows\Installer"
 
-$installerKey = Get-Item -Path $installerPath -EA 0
+        $installerKey = Get-Item -Path $installerPath -EA 0
 
-If ($installerKey -eq $null)
-{
-    $installerKey = New-Item -Path $installerPath
+        If ($installerKey -eq $null) {
+            $installerKey = New-Item -Path $installerPath
+        }
+
+        $currentMaxPatchCacheSize = $installerKey.GetValue("MaxPatchCacheSize")
+
+        If ($currentMaxPatchCacheSize -eq $null) {
+            New-ItemProperty -Path $installerPath -Name MaxPatchCacheSize `
+                -PropertyType DWord -Value $maxPatchCacheSize | Out-Null
+        }
+        ElseIf ($currentMaxPatchCacheSize -eq $maxPatchCacheSize) {
+            Write-Verbose ("MaxPatchCacheSize is already set to {0}." -f $maxPatchCacheSize)
+            return
+        }
+        Else {
+            Set-ItemProperty -Path $installerPath -Name MaxPatchCacheSize `
+                -Value $maxPatchCacheSize | Out-Null
+        }
+
+        Write-Host -Fore Green ("Successfully set MaxPatchCacheSize to {0}." `
+                -f $maxPatchCacheSize)
+    }
 }
-
-$currentMaxPatchCacheSize = $installerKey.GetValue("MaxPatchCacheSize")
-
-If ($currentMaxPatchCacheSize -eq $null)
-{
-    New-ItemProperty -Path $installerPath -Name MaxPatchCacheSize `
-        -PropertyType DWord -Value $maxPatchCacheSize | Out-Null
-}
-ElseIf ($currentMaxPatchCacheSize -eq $maxPatchCacheSize)
-{
-    Write-Verbose ("MaxPatchCacheSize is already set to {0}." -f $maxPatchCacheSize)
-    Exit
-}
-Else
-{
-    Set-ItemProperty -Path $installerPath -Name MaxPatchCacheSize `
-        -Value $maxPatchCacheSize | Out-Null
-}
-
-Write-Host -Fore Green ("Successfully set MaxPatchCacheSize to {0}." `
-    -f $maxPatchCacheSize)
