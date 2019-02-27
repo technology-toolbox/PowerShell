@@ -23,11 +23,16 @@ Description
 In this example, the MaxPatchCacheSize policy has previously been set to 0 (to
 indicate that no additional files should be saved).
 #>
+function Get-MaxPatchCacheSize {
+    Begin {
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
+    }
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+    Process {
+        [string] $installerPath = "HKLM:\Software\Policies\Microsoft\Windows\Installer"
 
-[string] $installerPath = "HKLM:\Software\Policies\Microsoft\Windows\Installer"
-
-Get-ItemProperty -Path $installerPath -Name MaxPatchCacheSize |
-    ForEach-Object { $_.MaxPatchCacheSize }
+        Get-ItemProperty -Path $installerPath -Name MaxPatchCacheSize |
+            ForEach-Object { $_.MaxPatchCacheSize }
+    }
+}
