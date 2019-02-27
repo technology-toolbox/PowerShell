@@ -70,10 +70,13 @@
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
     FunctionsToExport = @(
+        'Add-Hostnames',
         'Get-ArpRetryCount',
+        'Get-Hostnames',
         'Get-SecureString',
         'Get-MaxPatchCacheSize',
         'Get-Stopwatch',
+        'Remove-Hostnames',
         'Set-ArpRetryCount',
         'Set-MaxPatchCacheSize',
         'Write-ElapsedTime')

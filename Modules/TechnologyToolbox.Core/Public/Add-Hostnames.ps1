@@ -46,258 +46,231 @@ file and is mapped to the specified IP address. An error occurs if "foo" or
 .NOTES
 This script must be run with administrator privileges.
 #>
-param(
-    [parameter(Mandatory = $true)]
-    [string] $IPAddress,
-    [parameter(Mandatory = $true, ValueFromPipeline = $true)]
-    [string[]] $Hostnames,
-    [string] $Comment
-)
+function Add-Hostnames {
+    param(
+        [parameter(Mandatory = $true)]
+        [string] $IPAddress,
+        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string[]] $Hostnames,
+        [string] $Comment
+    )
 
-begin
-{
-    Set-StrictMode -Version Latest
-    $ErrorActionPreference = "Stop"
+    begin {
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
 
-    function CreateHostsEntryObject(
-        [string] $ipAddress,
-        [string[]] $hostnames,
-        <# [string] #> $comment) #HACK: never $null if type is specified
-    {
-        $hostsEntry = New-Object PSObject
-        $hostsEntry | Add-Member NoteProperty -Name "IpAddress" `
-            -Value $ipAddress
+        function CreateHostsEntryObject(
+            [string] $ipAddress,
+            [string[]] $hostnames,
+            <# [string] #> $comment) { #HACK: never $null if type is specified
+            $hostsEntry = New-Object PSObject
+            $hostsEntry | Add-Member NoteProperty -Name "IpAddress" `
+                -Value $ipAddress
 
-        [System.Collections.ArrayList] $hostnamesList =
-            New-Object System.Collections.ArrayList
+            [System.Collections.ArrayList] $hostnamesList =
+                New-Object System.Collections.ArrayList
 
-        $hostsEntry | Add-Member NoteProperty -Name "Hostnames" `
-            -Value $hostnamesList
+            $hostsEntry | Add-Member NoteProperty -Name "Hostnames" `
+                -Value $hostnamesList
 
-        If ($hostnames -ne $null)
-        {
-            $hostnames | foreach {
-                $hostsEntry.Hostnames.Add($_) | Out-Null
+            If ($hostnames -ne $null) {
+                $hostnames | foreach {
+                    $hostsEntry.Hostnames.Add($_) | Out-Null
+                }
             }
+
+            $hostsEntry | Add-Member NoteProperty -Name "Comment" -Value $comment
+
+            return $hostsEntry
         }
 
-        $hostsEntry | Add-Member NoteProperty -Name "Comment" -Value $comment
+        function ParseHostsEntry(
+            [string] $line) {
+            $hostsEntry = CreateHostsEntryObject
 
-        return $hostsEntry
-    }
+            Write-Debug "Parsing hosts entry: $line"
 
-    function ParseHostsEntry(
-        [string] $line)
-    {
-        $hostsEntry = CreateHostsEntryObject
+            If ($line.Contains("#") -eq $true) {
+                If ($line -eq "#") {
+                    $hostsEntry.Comment = [string]::Empty
+                }
+                Else {
+                    $hostsEntry.Comment = $line.Substring($line.IndexOf("#") + 1)
+                }
 
-        Write-Debug "Parsing hosts entry: $line"
-
-        If ($line.Contains("#") -eq $true)
-        {
-            If ($line -eq "#")
-            {
-                $hostsEntry.Comment = [string]::Empty
-            }
-            Else
-            {
-                $hostsEntry.Comment = $line.Substring($line.IndexOf("#") + 1)
+                $line = $line.Substring(0, $line.IndexOf("#"))
             }
 
-            $line = $line.Substring(0, $line.IndexOf("#"))
+            $line = $line.Trim()
+
+            If ($line.Length -gt 0) {
+                $hostsEntry.IpAddress = ($line -Split "\s+")[0]
+
+                Write-Debug "Parsed address: $($hostsEntry.IpAddress)"
+
+                [string[]] $parsedHostnames = $line.Substring(
+                    $hostsEntry.IpAddress.Length + 1).Trim() -Split "\s+"
+
+                Write-Debug ("Parsed hostnames ($($parsedHostnames.Length)):" `
+                        + " $parsedHostnames")
+
+                $parsedHostnames | foreach {
+                    $hostsEntry.Hostnames.Add($_) | Out-Null
+                }
+            }
+
+            return $hostsEntry
         }
 
-        $line = $line.Trim()
+        function ParseHostsFile {
+            $hostsEntries = New-Object System.Collections.ArrayList
 
-        If ($line.Length -gt 0)
-        {
-            $hostsEntry.IpAddress = ($line -Split "\s+")[0]
+            [string] $hostsFile = $env:WINDIR + "\System32\drivers\etc\hosts"
 
-            Write-Debug "Parsed address: $($hostsEntry.IpAddress)"
-
-            [string[]] $parsedHostnames = $line.Substring(
-                $hostsEntry.IpAddress.Length + 1).Trim() -Split "\s+"
-
-            Write-Debug ("Parsed hostnames ($($parsedHostnames.Length)):" `
-                + " $parsedHostnames")
-
-            $parsedHostnames | foreach {
-                $hostsEntry.Hostnames.Add($_) | Out-Null
+            If ((Test-Path $hostsFile) -eq $false) {
+                Write-Verbose "Hosts file does not exist."
             }
-        }
+            Else {
+                [string[]] $hostsContent = Get-Content $hostsFile
 
-        return $hostsEntry
-    }
+                $hostsContent | foreach {
+                    $hostsEntry = ParseHostsEntry $_
 
-    function ParseHostsFile
-    {
-        $hostsEntries = New-Object System.Collections.ArrayList
-
-        [string] $hostsFile = $env:WINDIR + "\System32\drivers\etc\hosts"
-
-        If ((Test-Path $hostsFile) -eq $false)
-        {
-            Write-Verbose "Hosts file does not exist."
-        }
-        Else
-        {
-            [string[]] $hostsContent = Get-Content $hostsFile
-
-            $hostsContent | foreach {
-                $hostsEntry = ParseHostsEntry $_
-
-                $hostsEntries.Add($hostsEntry) | Out-Null
-            }
-        }
-
-        # HACK: Return an array (containing the ArrayList) to avoid issue with
-        # PowerShell returning $null (when hosts file does not exist)
-        return ,$hostsEntries
-    }
-
-    function UpdateHostsFile(
-        $hostsEntries = $(Throw "Value cannot be null: hostsEntries"))
-    {
-        Write-Verbose "Updatings hosts file..."
-
-        [string] $hostsFile = $env:WINDIR + "\System32\drivers\etc\hosts"
-
-        $buffer = New-Object System.Text.StringBuilder
-
-        $hostsEntries | foreach {
-
-            If ([string]::IsNullOrEmpty($_.IpAddress) -eq $false)
-            {
-                $buffer.Append($_.IpAddress) | Out-Null
-                $buffer.Append("`t") | Out-Null
+                    $hostsEntries.Add($hostsEntry) | Out-Null
+                }
             }
 
-            If ($_.Hostnames -ne $null)
-            {
-                [bool] $firstHostname = $true
+            # HACK: Return an array (containing the ArrayList) to avoid issue with
+            # PowerShell returning $null (when hosts file does not exist)
+            return , $hostsEntries
+        }
 
-                $_.Hostnames | foreach {
-                    If ($firstHostname -eq $false)
-                    {
+        function UpdateHostsFile(
+            $hostsEntries = $(Throw "Value cannot be null: hostsEntries")) {
+            Write-Verbose "Updatings hosts file..."
+
+            [string] $hostsFile = $env:WINDIR + "\System32\drivers\etc\hosts"
+
+            $buffer = New-Object System.Text.StringBuilder
+
+            $hostsEntries | foreach {
+
+                If ([string]::IsNullOrEmpty($_.IpAddress) -eq $false) {
+                    $buffer.Append($_.IpAddress) | Out-Null
+                    $buffer.Append("`t") | Out-Null
+                }
+
+                If ($_.Hostnames -ne $null) {
+                    [bool] $firstHostname = $true
+
+                    $_.Hostnames | foreach {
+                        If ($firstHostname -eq $false) {
+                            $buffer.Append(" ") | Out-Null
+                        }
+                        Else {
+                            $firstHostname = $false
+                        }
+
+                        $buffer.Append($_) | Out-Null
+                    }
+                }
+
+                If ($_.Comment -ne $null) {
+                    If ([string]::IsNullOrEmpty($_.IpAddress) -eq $false) {
                         $buffer.Append(" ") | Out-Null
                     }
-                    Else
-                    {
-                        $firstHostname = $false
-                    }
 
-                    $buffer.Append($_) | Out-Null
-                }
-            }
-
-            If ($_.Comment -ne $null)
-            {
-                If ([string]::IsNullOrEmpty($_.IpAddress) -eq $false)
-                {
-                    $buffer.Append(" ") | Out-Null
+                    $buffer.Append("#") | Out-Null
+                    $buffer.Append($_.Comment) | Out-Null
                 }
 
-                $buffer.Append("#") | Out-Null
-                $buffer.Append($_.Comment) | Out-Null
+                $buffer.Append([System.Environment]::NewLine) | Out-Null
             }
 
-            $buffer.Append([System.Environment]::NewLine) | Out-Null
+            [string] $hostsContent = $buffer.ToString()
+
+            $hostsContent = $hostsContent.Trim()
+
+            Set-Content -Path $hostsFile -Value $hostsContent -Force -Encoding ASCII
+
+            Write-Verbose "Successfully updated hosts file."
         }
 
-        [string] $hostsContent = $buffer.ToString()
-
-        $hostsContent = $hostsContent.Trim()
-
-        Set-Content -Path $hostsFile -Value $hostsContent -Force -Encoding ASCII
-
-        Write-Verbose "Successfully updated hosts file."
-    }
-
-    [bool] $isInputFromPipeline =
+        [bool] $isInputFromPipeline =
         ($PSBoundParameters.ContainsKey("Hostnames") -eq $false)
 
-    [int] $pendingUpdates = 0
+        [int] $pendingUpdates = 0
 
-    [Collections.ArrayList] $hostsEntries = ParseHostsFile
-}
-
-process
-{
-    If ($isInputFromPipeline -eq $true)
-    {
-        $items = $_
-    }
-    Else
-    {
-        $items = $Hostnames
+        [Collections.ArrayList] $hostsEntries = ParseHostsFile
     }
 
-    $newHostsEntry = CreateHostsEntryObject $IpAddress
-    $hostsEntries.Add($newHostsEntry) | Out-Null
+    process {
+        If ($isInputFromPipeline -eq $true) {
+            $items = $_
+        }
+        Else {
+            $items = $Hostnames
+        }
 
-    $items | foreach {
-        [string] $hostname = $_
+        $newHostsEntry = CreateHostsEntryObject $IpAddress
+        $hostsEntries.Add($newHostsEntry) | Out-Null
 
-        [bool] $isHostnameInHostsEntries = $false
+        $items | foreach {
+            [string] $hostname = $_
 
-        for ([int] $i = 0; $i -lt $hostsEntries.Count; $i++)
-        {
-            $hostsEntry = $hostsEntries[$i]
+            [bool] $isHostnameInHostsEntries = $false
 
-            Write-Debug "Hosts entry: $hostsEntry"
+            for ([int] $i = 0; $i -lt $hostsEntries.Count; $i++) {
+                $hostsEntry = $hostsEntries[$i]
 
-            If ($hostsEntry.Hostnames.Count -eq 0)
-            {
-                continue
-            }
+                Write-Debug "Hosts entry: $hostsEntry"
 
-            for ([int] $j = 0; $j -lt $hostsEntry.Hostnames.Count; $j++)
-            {
-                [string] $parsedHostname = $hostsEntry.Hostnames[$j]
+                If ($hostsEntry.Hostnames.Count -eq 0) {
+                    continue
+                }
 
-                Write-Debug ("Comparing specified hostname" `
-                    + " ($hostname) to existing hostname" `
-                    + " ($parsedHostname)...")
+                for ([int] $j = 0; $j -lt $hostsEntry.Hostnames.Count; $j++) {
+                    [string] $parsedHostname = $hostsEntry.Hostnames[$j]
 
-                If ([string]::Compare($hostname, $parsedHostname, $true) -eq 0)
-                {
-                    $isHostnameInHostsEntries = $true
+                    Write-Debug ("Comparing specified hostname" `
+                            + " ($hostname) to existing hostname" `
+                            + " ($parsedHostname)...")
 
-                    If ($ipAddress -ne $hostsEntry.IpAddress)
-                    {
-                        Throw "The hosts file already contains the" `
-                            + " specified hostname ($parsedHostname) and it is" `
-                            + " mapped to a different address" `
-                            + " ($($hostsEntry.IpAddress))."
+                    If ([string]::Compare($hostname, $parsedHostname, $true) -eq 0) {
+                        $isHostnameInHostsEntries = $true
+
+                        If ($ipAddress -ne $hostsEntry.IpAddress) {
+                            Throw "The hosts file already contains the" `
+                                + " specified hostname ($parsedHostname) and it is" `
+                                + " mapped to a different address" `
+                                + " ($($hostsEntry.IpAddress))."
+                        }
+
+                        Write-Verbose ("The hosts file already contains the" `
+                                + " specified hostname ($($hostsEntry.IpAddress) $parsedHostname).")
                     }
-
-                    Write-Verbose ("The hosts file already contains the" `
-                        + " specified hostname ($($hostsEntry.IpAddress) $parsedHostname).")
                 }
             }
-        }
 
-        If ($isHostnameInHostsEntries -eq $false)
-        {
-            Write-Debug ("Adding hostname ($hostname) to hosts entry...")
+            If ($isHostnameInHostsEntries -eq $false) {
+                Write-Debug ("Adding hostname ($hostname) to hosts entry...")
 
-            $newHostsEntry.Hostnames.Add($hostname) | Out-Null
-            $pendingUpdates++
+                $newHostsEntry.Hostnames.Add($hostname) | Out-Null
+                $pendingUpdates++
+            }
         }
     }
-}
 
-end
-{
-    If ($pendingUpdates -eq 0)
-    {
-        Write-Verbose "No changes to the hosts file are necessary."
+    end {
+        If ($pendingUpdates -eq 0) {
+            Write-Verbose "No changes to the hosts file are necessary."
 
-        return
+            return
+        }
+
+        Write-Verbose ("There are $pendingUpdates pending update(s) to the hosts" `
+                + " file.")
+
+        UpdateHostsFile $hostsEntries
     }
-
-    Write-Verbose ("There are $pendingUpdates pending update(s) to the hosts" `
-        + " file.")
-
-    UpdateHostsFile $hostsEntries
 }
