@@ -5,6 +5,7 @@ build: off
 install:
   - ps: |
       Install-Module Pester, PSCodeCovIo -Scope CurrentUser -Force -SkipPublisherCheck
+      Import-Module Pester, PSCodeCovIo
       Get-Module | sort Name | select Name, ModuleType, Version
 
 test_script:
