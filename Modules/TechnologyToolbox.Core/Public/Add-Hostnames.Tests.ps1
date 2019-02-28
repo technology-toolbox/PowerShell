@@ -99,11 +99,9 @@ Describe 'Add-Hostnames Tests' {
         Add-Hostnames -IPAddress 192.168.0.1 -Hostnames foobar
 
         $expectedContent =
-@'
-# A comment
-127.0.0.1	localhost
-192.168.0.1	foobar
-'@
+'# A comment' + [Environment]::NewLine `
++ '127.0.0.1	localhost' + [Environment]::NewLine `
++ '192.168.0.1	foobar'
 
         It 'Set hosts file content' {
             $script:ValuePassedToSetContent | Should Be $expectedContent
