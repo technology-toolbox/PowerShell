@@ -7,6 +7,7 @@ install:
       Install-Module Pester, PSCodeCovIo -Scope CurrentUser -Force -SkipPublisherCheck
       Import-Module Pester, PSCodeCovIo
       Get-Module | sort Name | select Name, ModuleType, Version
+      $PSVersionTable
 
 test_script:
   # Run tests, upload test results and generate coverage report
