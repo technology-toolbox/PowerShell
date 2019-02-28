@@ -60,10 +60,7 @@ Describe 'Remove-Hostnames Tests' {
             '192.168.0.1     foobar # Fictitious host')
         }
 
-        $expectedContent =
-@'
-127.0.0.1	localhost
-'@
+        $expectedContent = '127.0.0.1	localhost'
 
         Mock Set-Content {}
 
@@ -89,10 +86,8 @@ Describe 'Remove-Hostnames Tests' {
         }
 
         $expectedContent =
-@'
-127.0.0.1	localhost
-192.168.0.1	bar # Fictitious hosts
-'@
+'127.0.0.1	localhost' + [Environment]::NewLine `
++ '192.168.0.1	bar # Fictitious hosts'
 
         Mock Set-Content {}
 
@@ -117,10 +112,7 @@ Describe 'Remove-Hostnames Tests' {
             '192.168.0.1     foo bar # fictitious host')
         }
 
-        $expectedContent =
-@'
-127.0.0.1	localhost foobar
-'@
+        $expectedContent = '127.0.0.1	localhost foobar'
 
         Mock Set-Content {}
 

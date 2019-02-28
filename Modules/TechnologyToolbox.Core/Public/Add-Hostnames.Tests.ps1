@@ -10,10 +10,7 @@ Describe 'Add-Hostnames Tests' {
 
         Add-Hostnames -IPAddress 127.0.0.1 -Hostnames foobar
 
-        $expectedContent =
-@'
-127.0.0.1	foobar
-'@
+        $expectedContent = '127.0.0.1	foobar'
 
         It 'Checks if hosts file exists' {
             Assert-MockCalled Test-Path -Times 1 -Exactly
@@ -42,10 +39,7 @@ Describe 'Add-Hostnames Tests' {
 
         Add-Hostnames -IPAddress 127.0.0.1 -Hostnames foobar
 
-        $expectedContent =
-@'
-127.0.0.1	foobar
-'@
+        $expectedContent = '127.0.0.1	foobar'
 
         It 'Set hosts file content' {
             Assert-MockCalled Set-Content -Times 1 -Exactly
@@ -117,12 +111,10 @@ Describe 'Add-Hostnames Tests' {
         'foo', 'bar' | Add-Hostnames -IPAddress 192.168.0.1
 
         $expectedContent =
-@'
-# A comment
-127.0.0.1	localhost
-192.168.0.1	foo
-192.168.0.1	bar
-'@
+'# A comment' + [Environment]::NewLine `
++ '127.0.0.1	localhost' + [Environment]::NewLine `
++ '192.168.0.1	foo' + [Environment]::NewLine `
++ '192.168.0.1	bar'
 
         It 'Set hosts file content' {
             Assert-MockCalled Set-Content -Times 1 -Exactly
@@ -148,11 +140,9 @@ Describe 'Add-Hostnames Tests' {
         Add-Hostnames -IPAddress 127.0.0.1 -Hostnames foobar
 
         $expectedContent =
-@'
-# A comment
-127.0.0.1	localhost
-127.0.0.1	foobar
-'@
+'# A comment' + [Environment]::NewLine `
++ '127.0.0.1	localhost' + [Environment]::NewLine `
++ '127.0.0.1	foobar'
 
         It 'Set hosts file content' {
             Assert-MockCalled Set-Content -Times 1 -Exactly
@@ -196,10 +186,8 @@ Describe 'Add-Hostnames Tests' {
         Add-Hostnames -IPAddress 10.0.0.1 -Hostnames foobar
 
         $expectedContent =
-@'
-192.168.0.1	foo bar # Fictitious hosts
-10.0.0.1	foobar
-'@
+'192.168.0.1	foo bar # Fictitious hosts' + [Environment]::NewLine `
++ '10.0.0.1	foobar'
 
         It 'Set hosts file content' {
             Assert-MockCalled Set-Content -Times 1 -Exactly
