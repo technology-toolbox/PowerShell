@@ -1,4 +1,7 @@
-﻿. $PSScriptRoot\Get-Hostnames.ps1
+﻿. $PSScriptRoot\..\Private\CreateHostsEntryObject.ps1
+. $PSScriptRoot\..\Private\ParseHostsEntry.ps1
+. $PSScriptRoot\..\Private\ParseHostsFile.ps1
+. $PSScriptRoot\Get-Hostnames.ps1
 
 Describe 'Get-Hostnames Tests' {
     [string] $hostsPath = `
