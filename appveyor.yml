@@ -5,9 +5,8 @@ build: off
 install:
   - ps: |
       Install-Module Pester, PSCodeCovIo -Scope CurrentUser -Force -SkipPublisherCheck
-      Import-Module Pester, PSCodeCovIo
-      Get-Module | sort Name | select Name, ModuleType, Version
-      $PSVersionTable
+
+      "PSVersion:   $($PSVersionTable.PSVersion), build: $($PSVersionTable.BuildVersion), clr version: $($PSVersionTable.ClrVersion)"
 
 test_script:
   # Run tests, upload test results and generate coverage report
