@@ -84,12 +84,16 @@ Describe 'Add-Hostnames Tests' {
             '127.0.0.1       localhost')
         }
 
+        [string] $script:ValuePassedToSetContent = $null
+
         Mock Set-Content {
             Write-Host "Mocked Set-Content called"
             Write-Host "    Path: $Path"
             Write-Host "    Value: $Value"
             Write-Host "    Force: $Force"
             Write-Host "    Encoding: $Encoding"
+
+            $script:ValuePassedToSetContent = $Value
         }
 
         Add-Hostnames -IPAddress 192.168.0.1 -Hostnames foobar
@@ -102,6 +106,8 @@ Describe 'Add-Hostnames Tests' {
 '@
 
         It 'Set hosts file content' {
+            $script:ValuePassedToSetContent | Should Be $expectedContent
+
             Assert-MockCalled Set-Content -Times 1 -Exactly
             Assert-MockCalled Set-Content -Times 1 -Exactly `
                 -ParameterFilter {
