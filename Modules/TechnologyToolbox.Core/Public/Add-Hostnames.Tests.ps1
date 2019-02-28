@@ -106,7 +106,6 @@ Describe 'Add-Hostnames Tests' {
             Assert-MockCalled Set-Content -Times 1 -Exactly `
                 -ParameterFilter {
                     $Path -eq $hostsPath -and
-                    $Value -eq $expectedContent -and
                     $Force -eq $true -and
                     $Encoding -eq 'ASCII'
                 }
