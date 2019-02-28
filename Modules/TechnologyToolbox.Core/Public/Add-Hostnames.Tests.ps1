@@ -84,7 +84,13 @@ Describe 'Add-Hostnames Tests' {
             '127.0.0.1       localhost')
         }
 
-        Mock Set-Content {}
+        Mock Set-Content {
+            Write-Host "Mocked Set-Content called"
+            Write-Host "    Path: $Path"
+            Write-Host "    Value: $Value"
+            Write-Host "    Force: $Force"
+            Write-Host "    Encoding: $Encoding"
+        }
 
         Add-Hostnames -IPAddress 192.168.0.1 -Hostnames foobar
 
