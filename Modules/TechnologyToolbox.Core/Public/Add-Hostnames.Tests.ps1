@@ -1,4 +1,8 @@
-﻿. $PSScriptRoot\Add-Hostnames.ps1
+﻿. $PSScriptRoot\..\Private\CreateHostsEntryObject.ps1
+. $PSScriptRoot\..\Private\ParseHostsEntry.ps1
+. $PSScriptRoot\..\Private\ParseHostsFile.ps1
+. $PSScriptRoot\..\Private\UpdateHostsFile.ps1
+. $PSScriptRoot\Add-Hostnames.ps1
 
 Describe 'Add-Hostnames Tests' {
     [string] $hostsPath = `
