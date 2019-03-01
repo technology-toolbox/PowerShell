@@ -12,90 +12,84 @@ Specifies the "scope" to use for the Path environment variable ("Process",
 .EXAMPLE
 .\Add-PathFolders.ps1 C:\NotBackedUp\Public\Toolbox
 #>
-param(
-    [parameter(Mandatory = $true, ValueFromPipeline = $true)]
-    [string[]] $Folders,
-    [string] $EnvironmentVariableTarget = "Process")
+function Add-PathFolders {
+    param(
+        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string[]] $Folders,
+        [string] $EnvironmentVariableTarget = "Process")
 
-begin
-{
-    Set-StrictMode -Version Latest
-    $ErrorActionPreference = "Stop"
+    begin {
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
 
-    Write-Verbose "Path environment variable target: $EnvironmentVariableTarget"
+        Write-Verbose `
+            "Path environment variable target: $EnvironmentVariableTarget"
 
-    [bool] $isInputFromPipeline =
+        [bool] $isInputFromPipeline =
         ($PSBoundParameters.ContainsKey("Folders") -eq $false)
 
-    [int] $foldersAdded = 0
+        [int] $foldersAdded = 0
 
-    [string[]] $pathFolders = [Environment]::GetEnvironmentVariable(
-        "Path",
-        $EnvironmentVariableTarget) -Split ";"
+        [string[]] $pathFolders = Get-PathFolders `
+            -EnvironmentVariableTarget $EnvironmentVariableTarget
 
-    [Collections.ArrayList] $folderList = New-Object Collections.ArrayList
+        [Collections.ArrayList] $folderList = New-Object Collections.ArrayList
 
-    $pathFolders | foreach {
-        $folderList.Add($_) | Out-Null
-    }
-}
-
-process
-{
-    If ($isInputFromPipeline -eq $true)
-    {
-        $items = $_
-    }
-    Else
-    {
-        $items = $Folders
+        $pathFolders | foreach {
+            $folderList.Add($_) | Out-Null
+        }
     }
 
-    $items | foreach {
-        [string] $folder = $_
+    process {
+        If ($isInputFromPipeline -eq $true) {
+            $items = $_
+        }
+        Else {
+            $items = $Folders
+        }
 
-        [bool] $isFolderInList = $false
+        $items | foreach {
+            [string] $folder = $_
 
-        $folderList | foreach {
-            If ([string]::Compare($_, $folder, $true) -eq 0)
-            {
-                Write-Verbose ("The folder ($folder) is already included" `
-                    + " in the Path environment variable.")
+            [bool] $isFolderInList = $false
 
-                $isFolderInList = $true
-                return
+            $folderList | foreach {
+                If ([string]::Compare($_, $folder, $true) -eq 0) {
+                    Write-Verbose ("The folder ($folder) is already included" `
+                            + " in the Path environment variable.")
+
+                    $isFolderInList = $true
+                    return
+                }
+            }
+
+            If ($isFolderInList -eq $false) {
+                Write-Verbose ("Adding folder ($folder) to Path environment" `
+                        + " variable...")
+
+                $folderList.Add($folder) | Out-Null
+
+                $foldersAdded++
             }
         }
+    }
 
-        If ($isFolderInList -eq $false)
-        {
-            Write-Verbose ("Adding folder ($folder) to Path environment" `
-                + " variable...")
+    end {
+        If ($foldersAdded -eq 0) {
+            Write-Verbose ("No changes to the Path environment variable are" `
+                    + " necessary.")
 
-            $folderList.Add($folder) | Out-Null
-
-            $foldersAdded++
+            return
         }
+
+        [string] $delimitedFolders = $folderList -Join ";"
+
+        SetEnvironmentVariable `
+            -Variable "Path" `
+            -Value $delimitedFolders `
+            -Target $EnvironmentVariableTarget
+
+        Write-Verbose ("Successfully added $foldersAdded folder(s) to Path" `
+                + " environment variable.")
     }
-}
-
-end
-{
-    If ($foldersAdded -eq 0)
-    {
-        Write-Verbose ("No changes to the Path environment variable are" `
-            + " necessary.")
-
-        return
-    }
-
-    [string] $delimitedFolders = $folderList -Join ";"
-
-    [Environment]::SetEnvironmentVariable(
-        "Path",
-        $delimitedFolders,
-        $EnvironmentVariableTarget)
-
-    Write-Verbose ("Successfully added $foldersAdded folder(s) to Path" `
-        + " environment variable.")
 }

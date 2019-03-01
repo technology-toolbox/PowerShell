@@ -12,92 +12,85 @@ Specifies the "scope" to use for the Path environment variable ("Process",
 .EXAMPLE
 .\Remove-PathFolders.ps1 C:\NotBackedUp\Public\Toolbox
 #>
-param(
-    [parameter(Mandatory = $true, ValueFromPipeline = $true)]
-    [string[]] $Folders,
-    [string] $EnvironmentVariableTarget = "Process")
+function Remove-PathFolders {
+    param(
+        [parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string[]] $Folders,
+        [string] $EnvironmentVariableTarget = "Process")
 
-begin
-{
-    Set-StrictMode -Version Latest
-    $ErrorActionPreference = "Stop"
+    begin {
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
 
-    Write-Verbose "Path environment variable target: $EnvironmentVariableTarget"
+        Write-Verbose `
+            "Path environment variable target: $EnvironmentVariableTarget"
 
-    [bool] $isInputFromPipeline =
+        [bool] $isInputFromPipeline =
         ($PSBoundParameters.ContainsKey("Folders") -eq $false)
 
-    [int] $foldersRemoved = 0
+        [int] $foldersRemoved = 0
 
-    [string[]] $pathFolders = [Environment]::GetEnvironmentVariable(
-        "Path",
-        $EnvironmentVariableTarget) -Split ";"
+        [string[]] $pathFolders = Get-PathFolders `
+            -EnvironmentVariableTarget $EnvironmentVariableTarget
 
-    [Collections.ArrayList] $folderList = New-Object Collections.ArrayList
+        [Collections.ArrayList] $folderList = New-Object Collections.ArrayList
 
-    $pathFolders | foreach {
-        $folderList.Add($_) | Out-Null
-    }
-}
-
-process
-{
-    If ($isInputFromPipeline -eq $true)
-    {
-        $items = $_
-    }
-    Else
-    {
-        $items = $Folders
+        $pathFolders | foreach {
+            $folderList.Add($_) | Out-Null
+        }
     }
 
-    $items | foreach {
-        [string] $folder = $_
+    process {
+        If ($isInputFromPipeline -eq $true) {
+            $items = $_
+        }
+        Else {
+            $items = $Folders
+        }
 
-        [bool] $isFolderInList = $false
+        $items | foreach {
+            [string] $folder = $_
 
-        for ([int] $i = 0; $i -lt $folderList.Count; $i++)
-        {
-            If ([string]::Compare($folderList[$i], $folder, $true) -eq 0)
-            {
-                $isFolderInList = $true
+            [bool] $isFolderInList = $false
 
-                Write-Verbose ("Removing folder ($folder) from Path" `
-                    + " environment variable...")
+            for ([int] $i = 0; $i -lt $folderList.Count; $i++) {
+                If ([string]::Compare($folderList[$i], $folder, $true) -eq 0) {
+                    $isFolderInList = $true
 
-                $folderList.RemoveAt($i)
-                $i--
+                    Write-Verbose ("Removing folder ($folder) from Path" `
+                            + " environment variable...")
 
-                $foldersRemoved++
+                    $folderList.RemoveAt($i)
+                    $i--
+
+                    $foldersRemoved++
+                }
+            }
+
+            If ($isFolderInList -eq $false) {
+                Write-Verbose ("The folder ($folder) is not specified in the" `
+                        + " Path list.")
+
             }
         }
+    }
 
-        If ($isFolderInList -eq $false)
-        {
-            Write-Verbose ("The folder ($folder) is not specified in the Path" `
-                + " list.")
+    end {
+        If ($foldersRemoved -eq 0) {
+            Write-Verbose ("No changes to the Path environment variable are" `
+                    + " necessary.")
 
+            return
         }
+
+        [string] $delimitedFolders = $folderList -Join ";"
+
+        SetEnvironmentVariable `
+            -Variable "Path" `
+            -Value $delimitedFolders `
+            -Target $EnvironmentVariableTarget
+
+        Write-Verbose ("Successfully removed $foldersRemoved folder(s) from" `
+                + " Path environment variable.")
     }
-}
-
-end
-{
-    If ($foldersRemoved -eq 0)
-    {
-        Write-Verbose ("No changes to the Path environment variable are" `
-            + " necessary.")
-
-        return
-    }
-
-    [string] $delimitedFolders = $folderList -Join ";"
-
-    [Environment]::SetEnvironmentVariable(
-        "Path",
-        $delimitedFolders,
-        $EnvironmentVariableTarget)
-
-    Write-Verbose ("Successfully removed $foldersRemoved folder(s) from Path" `
-        + " environment variable.")
 }

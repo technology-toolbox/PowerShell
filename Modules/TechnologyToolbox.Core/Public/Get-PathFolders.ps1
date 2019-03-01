@@ -30,17 +30,24 @@ The output from this example assumes one folder
 ("C:\NotBackedUp\Public\Toolbox") has previously been added to the user's Path
 environment variable.
 #>
-param(
-    [string] $EnvironmentVariableTarget = "Process")
+function Get-PathFolders {
+    param(
+        [string] $EnvironmentVariableTarget = "Process")
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+    Begin {
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
+    }
 
-[string[]] $pathFolders = [Environment]::GetEnvironmentVariable(
-    "Path",
-    $EnvironmentVariableTarget) -Split ";"
+    Process {
+        [string] $path = GetEnvironmentVariable `
+            -Variable "Path" `
+            -Target $EnvironmentVariableTarget
 
-If ($pathFolders -ne $null)
-{
-    Write-Output $pathFolders
+        [string[]] $pathFolders = $path -Split ";"
+
+        If ($pathFolders -ne $null) {
+            Write-Output $pathFolders
+        }
+    }
 }
