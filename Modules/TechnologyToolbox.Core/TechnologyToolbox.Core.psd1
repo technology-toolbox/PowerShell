@@ -72,14 +72,17 @@
     FunctionsToExport = @(
         'Add-BackConnectionHostnames',
         'Add-Hostnames',
+        'Add-PathFolders',
         'Get-ArpRetryCount',
         'Get-BackConnectionHostnames',
         'Get-Hostnames',
         'Get-SecureString',
         'Get-MaxPatchCacheSize',
+        'Get-PathFolders',
         'Get-Stopwatch',
         'Remove-BackConnectionHostnames',
         'Remove-Hostnames',
+        'Remove-PathFolders',
         'Set-ArpRetryCount',
         'Set-MaxPatchCacheSize',
         'Write-ElapsedTime')
