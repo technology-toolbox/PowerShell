@@ -1,3 +1,5 @@
+. $PSScriptRoot\..\Private\GetBackConnectionHostNameList.ps1
+. $PSScriptRoot\..\Private\SetBackConnectionHostNamesRegistryValue.ps1
 . $PSScriptRoot\Add-BackConnectionHostNames.ps1
 
 Describe 'Add-BackConnectionHostNames Tests' {
