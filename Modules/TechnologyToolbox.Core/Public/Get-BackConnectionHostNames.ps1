@@ -21,17 +21,23 @@ The output from this example assumes two host names ("fabrikam-local" and
 "www-local.fabrikam.com") have previously been added to the
 BackConnectionHostNames registry value .
 #>
+function Get-BackConnectionHostNames {
+    begin {
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
+    }
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+    process {
+        [string] $registryPath =
+            "HKLM:\System\CurrentControlSet\Control\Lsa\MSV1_0"
 
-[string] $registryPath = "HKLM:\System\CurrentControlSet\Control\Lsa\MSV1_0"
+        $registryKey = Get-Item -Path $registryPath
 
-$registryKey = Get-Item -Path $registryPath
+        $backConnectionHostNames = $registryKey.GetValue(
+            "BackConnectionHostNames")
 
-$backConnectionHostNames = $registryKey.GetValue("BackConnectionHostNames")
-
-If ($backConnectionHostNames -ne $null)
-{
-    $backConnectionHostNames | Write-Output
+        If ($backConnectionHostNames -ne $null) {
+            $backConnectionHostNames | Write-Output
+        }
+    }
 }
