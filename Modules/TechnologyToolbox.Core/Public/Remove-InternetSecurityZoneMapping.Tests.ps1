@@ -1,4 +1,5 @@
-﻿. $PSScriptRoot\Remove-InternetSecurityZoneMapping.ps1
+﻿. $PSScriptRoot\..\Private\IsEscEnabled.ps1
+. $PSScriptRoot\Remove-InternetSecurityZoneMapping.ps1
 
 Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
     [string] $zoneMapPath = 'HKCU:\Software\Microsoft\Windows' `
