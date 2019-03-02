@@ -24,64 +24,25 @@
 
             Write-Verbose "Adding pattern ($pattern) to zone ($zone)..."
 
-            [Uri] $url = [Uri] $pattern
+            $zoneMappingInfo = GetInternetSecurityZoneMappingInfo -Pattern $pattern
 
-            [string[]] $domainParts = $url.Host -split '\.'
-
-            [string] $subdomain = $null
-            [string] $domain = $null
-
-            If ($domainParts.Length -eq 1) {
-                $domain = $domainParts[0]
-            }
-            ElseIf ($domainParts.Length -eq 2) {
-                $domain = $domainParts[0..1] -join '.'
-            }
-            Else {
-                $domainStartIndex = $domainParts.Length - 2
-                $domainEndIndex = $domainStartIndex + 1
-
-                $subdomainStartIndex = 0
-                $subdomainEndIndex = $domainStartIndex - 1
-
-                $subdomain = `
-                    $domainParts[$subdomainStartIndex..$subdomainEndIndex] `
-                    -join '.'
-
-                $domain = $domainParts[$domainStartIndex..$domainEndIndex] `
-                    -join '.'
-            }
-
-            Write-Debug "subdomain: $subdomain"
-            Write-Debug "domain: $domain"
-
-            [string] $zoneMapPath = "HKCU:\Software\Microsoft\Windows" `
-                + "\CurrentVersion\Internet Settings\ZoneMap"
-
-            [string] $registryPath = $null
-
-            If (IsEscEnabled -eq $true) {
-                $registryPath = "$zoneMapPath\EscDomains\$domain"
-            }
-            Else {
-                $registryPath = "$zoneMapPath\Domains\$domain"
-            }
+            [string] $registryPath = $zoneMappingInfo.RegistryPath
 
             If ((Test-Path $registryPath) -eq $false) {
-                New-Item $registryPath | Out-Null
-            }
+                If ([string]::IsNullOrEmpty($zoneMappingInfo.Subdomain) -eq $false) {
+                    [string] $parentRegistryPath = Split-Path $registryPath -Parent
 
-            If ([string]::IsNullOrEmpty($subdomain) -eq $false) {
-                $registryPath = $registryPath + "\$subdomain"
-
-                If ((Test-Path $registryPath) -eq $false) {
-                    New-Item $registryPath | Out-Null
+                    If ((Test-Path $parentRegistryPath) -eq $false) {
+                        New-Item $parentRegistryPath | Out-Null
+                    }
                 }
+
+                New-Item $registryPath | Out-Null
             }
 
             $registryKey = Get-Item $registryPath
 
-            [string] $propertyName = $url.Scheme
+            [string] $propertyName = $zoneMappingInfo.Scheme
 
             [int] $zoneIndex = -1
 
@@ -138,7 +99,7 @@
         }
 
         [bool] $isInputFromPipeline =
-            ($PSBoundParameters.ContainsKey("Patterns") -eq $false)
+        ($PSBoundParameters.ContainsKey("Patterns") -eq $false)
     }
 
     Process {

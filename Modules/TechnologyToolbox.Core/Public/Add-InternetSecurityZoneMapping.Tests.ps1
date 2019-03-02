@@ -1,4 +1,5 @@
-﻿. $PSScriptRoot\..\Private\IsEscEnabled.ps1
+. $PSScriptRoot\..\Private\GetInternetSecurityZoneMappingInfo.ps1
+. $PSScriptRoot\..\Private\IsEscEnabled.ps1
 . $PSScriptRoot\Add-InternetSecurityZoneMapping.ps1
 
 Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {

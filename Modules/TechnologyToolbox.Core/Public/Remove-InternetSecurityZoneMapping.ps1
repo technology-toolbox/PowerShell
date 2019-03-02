@@ -51,60 +51,26 @@
             Write-Verbose `
                 "Removing security zone mapping for pattern ($pattern)..."
 
-            [Uri] $url = [Uri] $pattern
+            $zoneMappingInfo = GetInternetSecurityZoneMappingInfo -Pattern $pattern
 
-            [string[]] $domainParts = $url.Host -split '\.'
+            [string] $registryPath = $zoneMappingInfo.RegistryPath
 
-            [string] $subdomain = $null
-            [string] $domain = $null
+            [string] $domainRegistryPath = $registryPath
 
-            If ($domainParts.Length -eq 1) {
-                $domain = $domainParts[0]
-            }
-            ElseIf ($domainParts.Length -eq 2) {
-                $domain = $domainParts[0..1] -join '.'
+            If ([string]::IsNullOrEmpty($zoneMappingInfo.Subdomain) -eq $false) {
+                $domainRegistryPath = Split-Path $registryPath -Parent
             }
             Else {
-                $domainStartIndex = $domainParts.Length - 2
-                $domainEndIndex = $domainStartIndex + 1
-
-                $subdomainStartIndex = 0
-                $subdomainEndIndex = $domainStartIndex - 1
-
-                $subdomain = `
-                    $domainParts[$subdomainStartIndex..$subdomainEndIndex] `
-                    -join '.'
-
-                $domain = $domainParts[$domainStartIndex..$domainEndIndex] `
-                    -join '.'
+                $domainRegistryPath = $registryPath
             }
 
-            Write-Debug "subdomain: $subdomain"
-            Write-Debug "domain: $domain"
-
-            [string] $zoneMapPath = "HKCU:\Software\Microsoft\Windows" `
-                + "\CurrentVersion\Internet Settings\ZoneMap"
-
-            [string] $registryPath = $null
-
-            If (IsEscEnabled -eq $true) {
-                $registryPath = "$zoneMapPath\EscDomains\$domain"
-            }
-            Else {
-                $registryPath = "$zoneMapPath\Domains\$domain"
-            }
-
-            If ((Test-Path $registryPath) -eq $false) {
-                Write-Debug "Registry key ($registryPath) does not exist."
+            If ((Test-Path $domainRegistryPath) -eq $false) {
+                Write-Debug "Registry key ($domainRegistryPath) does not exist."
 
                 return
             }
 
-            [string] $domainRegistryPath = $registryPath
-
-            If ([string]::IsNullOrEmpty($subdomain) -eq $false) {
-                $registryPath = $registryPath + "\$subdomain"
-
+            If ([string]::IsNullOrEmpty($zoneMappingInfo.Subdomain) -eq $false) {
                 If ((Test-Path $registryPath) -eq $false) {
                     Write-Debug "Registry key ($registryPath) does not exist."
 
@@ -114,7 +80,7 @@
 
             $registryKey = Get-Item $registryPath
 
-            [string] $propertyName = $url.Scheme
+            [string] $propertyName = $zoneMappingInfo.Scheme
 
             $property = $registryKey.GetValue($propertyName, $null)
 
