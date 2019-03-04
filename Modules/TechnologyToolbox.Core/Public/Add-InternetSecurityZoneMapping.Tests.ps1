@@ -120,12 +120,9 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
         # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
         #   \ZoneMap
         #     \Domains
-        #       \microsoft.com
 
-        New-Item "$domainsRegistryPath\microsoft.com"
-
-        It 'Subdomain registry key does not already exist' {
-            Test-Path -Path "$domainsRegistryPath\microsoft.com\www" |
+        It 'Domain registry key does not already exist' {
+            Test-Path -Path "$domainsRegistryPath\microsoft.com" |
                 Should Be $false
         }
 
