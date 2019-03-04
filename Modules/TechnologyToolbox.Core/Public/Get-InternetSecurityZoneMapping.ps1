@@ -63,9 +63,7 @@ function Get-InternetSecurityZoneMapping {
 
             Write-Debug "zoneFilter: $zoneFilter"
 
-            [string] $zoneMapPath = ("HKCU:\Software\Microsoft\Windows" `
-                    + "\CurrentVersion\Internet Settings\ZoneMap")
-
+            [string] $zoneMapPath = GetZoneMapPath
             [string] $registryPath = $null
 
             If (IsEscEnabled -eq $true) {

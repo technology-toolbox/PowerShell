@@ -34,8 +34,7 @@ function GetInternetSecurityZoneMappingInfo {
     Write-Debug "subdomain: $subdomain"
     Write-Debug "domain: $domain"
 
-    [string] $zoneMapPath = "HKCU:\Software\Microsoft\Windows" `
-        + "\CurrentVersion\Internet Settings\ZoneMap"
+    [string] $zoneMapPath = GetZoneMapPath
 
     [string] $registryPath = $null
 

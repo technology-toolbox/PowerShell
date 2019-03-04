@@ -1,4 +1,5 @@
 ﻿. $PSScriptRoot\..\Private\GetInternetSecurityZoneMappingInfo.ps1
+. $PSScriptRoot\..\Private\GetZoneMapPath.ps1
 . $PSScriptRoot\..\Private\IsEscEnabled.ps1
 . $PSScriptRoot\..\Private\RemoveRegistryKeyIfEmpty.ps1
 . $PSScriptRoot\Remove-InternetSecurityZoneMapping.ps1

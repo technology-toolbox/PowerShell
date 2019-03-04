@@ -1,4 +1,5 @@
 . $PSScriptRoot\GetInternetSecurityZoneMappingInfo.ps1
+. $PSScriptRoot\GetZoneMapPath.ps1
 . $PSScriptRoot\IsEscEnabled.ps1
 
 Describe 'GetInternetSecurityZoneMappingInfo Tests (ESC enabled)' {
