@@ -5,53 +5,36 @@
 . $PSScriptRoot\Remove-InternetSecurityZoneMapping.ps1
 
 Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
-    [string] $zoneMapPath = 'HKCU:\Software\Microsoft\Windows' `
-        + '\CurrentVersion\Internet Settings\ZoneMap'
+    Mock IsEscEnabled {return $false}
 
+    # Fake registry entries:
+    #
+    # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
+    #   \ZoneMap
+    #     \Domains
+
+    [string] $zoneMapPath = 'TestRegistry:\ZoneMap'
     [string] $domainsRegistryPath = "$zoneMapPath\Domains"
 
-    [string] $escRegistryPath = 'HKLM:\SOFTWARE\Microsoft\Active Setup' `
-        + '\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}'
+    New-Item "$zoneMapPath"
+    New-Item "$domainsRegistryPath"
 
-    Mock Get-ChildItem {Throw "Unsupported Path ($Path)"}
-    Mock Get-Item {Throw "Unsupported Path ($Path)"}
-    Mock New-Item {Throw 'New-Item should not be called'}
-    Mock New-ItemProperty {Throw 'New-ItemProperty should not be called'}
-    Mock Remove-Item {Throw "Unsupported Path ($Path)"}
-    Mock Set-ItemProperty {Throw 'Set-ItemProperty should not be called'}
-    Mock Test-Path {Throw "Unsupported Path ($Path)"}
-    Mock Test-Path {return $false} -ParameterFilter {
-        $Path -eq $escRegistryPath
-    }
+    Mock GetZoneMapPath {return $zoneMapPath}
 
     Context '[Domains registry key is empty]' {
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\localhost"
-            }
+        # Fake registry entries:
+        #
+        # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
+        #   \ZoneMap
+        #     \Domains
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return @()
-        }
-
-        Mock Get-Item {return $fakeDomainRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
+        It 'Domain registry key does not exist' {
+            Test-Path "$domainsRegistryPath\localhost" | Should Be $false
         }
 
         Mock Remove-ItemProperty {}
-        Mock Test-Path {return $false} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
 
         Remove-InternetSecurityZoneMapping http://localhost
-
-        It 'Reads expected registry key to check if domain exists' {
-            Assert-MockCalled Test-Path -Times 1 -Exactly `
-                -ParameterFilter {
-                    $Path -eq "$domainsRegistryPath\localhost"
-                }
-        }
 
         It 'Does not remove registry value for scheme' {
             Assert-MockCalled Remove-ItemProperty -Times 0
@@ -68,51 +51,35 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
         #         - http (1)
         #         - https (1)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\localhost"
-            }
+        New-Item "$domainsRegistryPath\localhost"
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name http -Value 1
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValue {
-                return 1
-            }
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name https -Value 1
 
-        $fakeDomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'localhost'
-                http = 1
-                https = 1
-            }
+        It 'Registry key should have two properties before removal' {
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Select-Object -ExpandProperty http |
+                Should Be 1
 
-        Mock Get-ChildItem {return $null} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-ItemProperty {return $fakeDomainSchemeRegistryKey} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-Item {return $fakeDomainRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Remove-ItemProperty {}
-        Mock Test-Path {return $true} -ParameterFilter {
-           $Path -eq "$domainsRegistryPath\localhost"
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Select-Object -ExpandProperty https |
+                Should Be 1
         }
 
         Remove-InternetSecurityZoneMapping http://localhost
 
         It 'Removes registry value for scheme' {
-            Assert-MockCalled Remove-ItemProperty -Times 1 -Exactly
-            Assert-MockCalled Remove-ItemProperty -Times 1 -Exactly `
-                -ParameterFilter {
-                    $Path -eq "$domainsRegistryPath\localhost" -and
-                    $Name -eq 'http'
-                }
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Get-Member |
+                Should Not Contain http
+        }
+
+        It 'Does not remove registry value for other scheme' {
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Select-Object -ExpandProperty https |
+                Should Be 1
         }
     }
 
@@ -125,45 +92,16 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
         #       \foobar.com
         #         - http (4)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\foobar.com"
-            }
-
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValue {
-                return $null
-            }
-
-        $fakeDomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'foobar.com'
-                http = 4
-            }
-
-        Mock Get-ChildItem {return $null} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\foobar.com"
-            }
-
-        Mock Get-ItemProperty {return $fakeDomainSchemeRegistryKey} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\foobar.com"
-            }
-
-        Mock Get-Item {return $fakeDomainRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com"
-        }
-
-        Mock Remove-ItemProperty {}
-        Mock Test-Path {return $true} -ParameterFilter {
-           $Path -eq "$domainsRegistryPath\foobar.com"
-        }
+        New-Item "$domainsRegistryPath\foobar.com"
+        Set-ItemProperty -Path "$domainsRegistryPath\foobar.com" `
+            -Name http -Value 4
 
         Remove-InternetSecurityZoneMapping https://foobar.com
 
         It 'Does not remove registry value for scheme' {
-            Assert-MockCalled Remove-ItemProperty -Times 0
+            Get-ItemProperty -Path "$domainsRegistryPath\foobar.com" |
+                Select-Object -ExpandProperty http |
+                Should Be 4
         }
     }
 
@@ -176,50 +114,14 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
         #       \localhost
         #         - http (1)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\localhost"
-            }
-
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValue {
-                return 1
-            }
-
-        $fakeDomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'localhost'
-                http = 1
-            }
-
-        Mock Get-ChildItem {return $null} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-ItemProperty {return $fakeDomainSchemeRegistryKey} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-Item {return $fakeDomainRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Remove-ItemProperty {}
-        Mock Test-Path {return $true} -ParameterFilter {
-           $Path -eq "$domainsRegistryPath\localhost"
-        }
+        New-Item "$domainsRegistryPath\localhost"
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name http -Value 1
 
         Remove-InternetSecurityZoneMapping http://localhost
 
-        It 'Removes registry value for scheme' {
-            Assert-MockCalled Remove-ItemProperty -Times 1 -Exactly
-            Assert-MockCalled Remove-ItemProperty -Times 1 -Exactly `
-                -ParameterFilter {
-                    $Path -eq "$domainsRegistryPath\localhost" -and
-                    $Name -eq 'http'
-                }
+        It 'Removes registry key for domain' {
+            Test-Path -Path "$domainsRegistryPath\localhost" | Should Be $false
         }
     }
 
@@ -233,72 +135,15 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
         #         \www
         #           - http (2)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\microsoft.com"
-            }
-
-        $fakeSubdomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSParentPath = "$domainsRegistryPath\microsoft.com"
-                PSPath = "$domainsRegistryPath\microsoft.com\www"
-            }
-
-        $fakeSubdomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return 2
-        }
-
-        $fakeSubdomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'www'
-                http = 2
-            }
-
-        Mock Get-ChildItem {return $fakeSubdomainRegistryKey} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com"
-            }
-
-        Mock Get-ChildItem {return $null} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com\www"
-            }
-
-        Mock Get-Item {return @($fakeSubdomainRegistryKey)} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com\www"
-            }
-
-        Mock Get-ItemProperty {return $fakeSubdomainSchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\www"
-        }
-
-        Mock Remove-ItemProperty {}
-        Mock Test-Path {return $true} -ParameterFilter {
-           $Path -eq "$domainsRegistryPath\microsoft.com"
-        }
-
-        Mock Test-Path {return $true} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\www"
-        }
+        New-Item "$domainsRegistryPath\microsoft.com"
+        New-Item "$domainsRegistryPath\microsoft.com\www"
+        Set-ItemProperty -Path "$domainsRegistryPath\microsoft.com\www" `
+            -Name http -Value 2
 
         Remove-InternetSecurityZoneMapping http://www.microsoft.com
 
-        It 'Reads expected registry key to check if domain exists' {
-            Assert-MockCalled Test-Path -Times 2 -Exactly `
-                -ParameterFilter {
-                    $Path -eq "$domainsRegistryPath\microsoft.com"
-                }
-        }
-
-        It 'Removes registry value for scheme' {
-            Assert-MockCalled Remove-ItemProperty -Times 1 -Exactly
-            Assert-MockCalled Remove-ItemProperty -Times 1 -Exactly `
-                -ParameterFilter {
-                    $Path -eq "$domainsRegistryPath\microsoft.com\www" -and
-                    $Name -eq 'http'
-                }
+        It 'Removes registry key for domain' {
+            Test-Path -Path "$domainsRegistryPath\microsoft.com" | Should Be $false
         }
     }
 
@@ -312,48 +157,17 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
         #         \www
         #           - https (2)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\foobar.com"
-            }
-
-        $fakeSubdomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSParentPath = "$domainsRegistryPath\foobar.com"
-                PSPath = "$domainsRegistryPath\foobar.com\www"
-            }
-
-        $fakeSubdomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return 2
-        }
-
-        $fakeSubdomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'www'
-                https = 2
-            }
-
-        Mock Get-Item {return @($fakeSubdomainRegistryKey)} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\foobar.com\www"
-            }
-
-        Mock Get-ItemProperty {return $fakeSubdomainSchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com\www"
-        }
-
-        Mock Remove-ItemProperty {}
-        Mock Test-Path {return $false} -ParameterFilter {
-           $Path -eq "$domainsRegistryPath\foobar.com"
-        }
+        New-Item "$domainsRegistryPath\foobar.com"
+        New-Item "$domainsRegistryPath\foobar.com\www"
+        Set-ItemProperty -Path "$domainsRegistryPath\foobar.com\www" `
+            -Name https -Value 2
 
         Remove-InternetSecurityZoneMapping http://www.foobar.com
 
-        It 'Does not removes registry value for scheme' {
-            Assert-MockCalled Remove-ItemProperty -Times 0
+        It 'Does not remove registry value for scheme' {
+            Get-ItemProperty -Path "$domainsRegistryPath\foobar.com\www" |
+                Select-Object -ExpandProperty https |
+                Should Be 2
         }
     }
 
@@ -365,51 +179,37 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
         #     \Domains
         #       \localhost
         #         - http (1)
+        #         - https (1)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\localhost"
-            }
+        New-Item "$domainsRegistryPath\localhost"
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name http -Value 1
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValue {
-                return 1
-            }
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name https -Value 1
 
-        $fakeDomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'localhost'
-                http = 1
-            }
+        It 'Registry key should have two properties before removal' {
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Select-Object -ExpandProperty http |
+                Should Be 1
 
-        Mock Get-ChildItem {return $null} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-ItemProperty {return $fakeDomainSchemeRegistryKey} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-Item {return $fakeDomainRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Remove-ItemProperty {}
-        Mock Test-Path {return $true} -ParameterFilter {
-           $Path -eq "$domainsRegistryPath\localhost"
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Select-Object -ExpandProperty https |
+                Should Be 1
         }
 
         'http://localhost' | Remove-InternetSecurityZoneMapping
 
         It 'Removes registry value for scheme' {
-            Assert-MockCalled Remove-ItemProperty -Times 1 -Exactly
-            Assert-MockCalled Remove-ItemProperty -Times 1 -Exactly `
-                -ParameterFilter {
-                    $Path -eq "$domainsRegistryPath\localhost" -and
-                    $Name -eq 'http'
-                }
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Get-Member |
+                Should Not Contain http
+        }
+
+        It 'Does not remove registry value for other scheme' {
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Select-Object -ExpandProperty https |
+                Should Be 1
         }
     }
 }

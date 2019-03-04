@@ -4,84 +4,45 @@
 . $PSScriptRoot\Add-InternetSecurityZoneMapping.ps1
 
 Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
-    [string] $zoneMapPath = 'HKCU:\Software\Microsoft\Windows' `
-        + '\CurrentVersion\Internet Settings\ZoneMap'
+    Mock IsEscEnabled {return $false}
 
+    # Fake registry entries:
+    #
+    # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
+    #   \ZoneMap
+    #     \Domains
+
+    [string] $zoneMapPath = 'TestRegistry:\ZoneMap'
     [string] $domainsRegistryPath = "$zoneMapPath\Domains"
 
-    [string] $escRegistryPath = 'HKLM:\SOFTWARE\Microsoft\Active Setup' `
-        + '\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}'
+    New-Item "$zoneMapPath"
+    New-Item "$domainsRegistryPath"
 
-    Mock Get-ChildItem {Throw "Mock Get-ChildItem called with unexpected Path ($Path)"}
-    Mock Get-Item {Throw "Mock Get-Item called with unexpected Path ($Path)"}
-    Mock New-Item {Throw "Mock New-Item called with unexpected Path ($Path)"}
-    Mock New-ItemProperty {Throw "Mock New-ItemProperty called with unexpected Path ($Path)"}
-    Mock Remove-Item {Throw "Mock Remove-Item called with unexpected Path ($Path)"}
-    Mock Set-ItemProperty {Throw "Mock Set-ItemProperty called with unexpected Path ($Path)"}
-    Mock Test-Path {Throw "Mock Test-Path called with unexpected Path ($Path)"}
-    Mock Test-Path {return $false} -ParameterFilter {
-        $Path -eq $escRegistryPath
-    }
+    Mock GetZoneMapPath {return $zoneMapPath}
 
     Context '[Domains registry key is empty]' {
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSPath = "$domainsRegistryPath\localhost"
-        }
+        # Fake registry entries:
+        #
+        # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
+        #   \ZoneMap
+        #     \Domains
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return @()
-        }
-
-        Mock Get-Item {return $fakeDomainRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock New-Item {} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock New-ItemProperty {} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Set-ItemProperty {} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Test-Path {return $false} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
+        It 'Domain registry key does not already exist' {
+            Test-Path "$domainsRegistryPath\localhost" | Should Be $false
         }
 
         Add-InternetSecurityZoneMapping `
             -Zone LocalIntranet `
             -Patterns http://localhost
 
-        It 'Reads expected registry key to check if domain exists' {
-            Assert-MockCalled Test-Path -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-        }
-
         It 'Creates new registry key when domain does not exist' {
-            Assert-MockCalled New-Item -Times 1 -Exactly
-            Assert-MockCalled New-Item -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
+            Test-Path "$domainsRegistryPath\localhost" | Should Be $true
         }
 
         It 'Sets registry value for scheme' {
-            Assert-MockCalled New-ItemProperty -Times 1 -Exactly
-            Assert-MockCalled New-ItemProperty -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost" -and
-                $Name -eq 'http' -and
-                $PropertyType -eq 'DWORD' -and
-                $Value -eq 1
-            }
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Select-Object -ExpandProperty http |
+                Should Be 1
         }
     }
 
@@ -94,47 +55,15 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
         #       \localhost
         #         - http (1)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSPath = "$domainsRegistryPath\localhost"
-        }
+        New-Item "$domainsRegistryPath\localhost"
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name http -Value 1
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return 1
-        }
-
-        $fakeDomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSChildName = 'localhost'
-            http        = 2
-            https       = 2
-        }
-
-        Mock Get-ItemProperty {return $fakeDomainSchemeRegistryKey} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-Item {return $fakeDomainRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Test-Path {return $true} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
+        Mock Set-ItemProperty {}
 
         Add-InternetSecurityZoneMapping `
             -Zone LocalIntranet `
             -Patterns http://localhost
-
-        It 'Reads expected registry key to check if domain exists' {
-            Assert-MockCalled Test-Path -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-        }
 
         It 'Does not set registry value for scheme' {
             Assert-MockCalled Set-ItemProperty -Times 0
@@ -150,118 +79,38 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
         #       \localhost
         #         - http (2)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSPath = "$domainsRegistryPath\localhost"
-        }
-
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return 2
-        }
-
-        $fakeDomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSChildName = 'localhost'
-            http        = 2
-            https       = 2
-        }
-
-        Mock Get-ItemProperty {return $fakeDomainSchemeRegistryKey} `
-            -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Get-Item {return $fakeDomainRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Set-ItemProperty {} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Test-Path {return $true} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
+        New-Item "$domainsRegistryPath\localhost"
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name http -Value 2
 
         Add-InternetSecurityZoneMapping `
             -Zone LocalIntranet `
             -Patterns http://localhost
 
-        It 'Reads expected registry key to check if domain exists' {
-            Assert-MockCalled Test-Path -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-        }
-
         It 'Sets registry value for scheme' {
-            Assert-MockCalled Set-ItemProperty -Times 1 -Exactly
-            Assert-MockCalled Set-ItemProperty -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost" -and
-                $Name -eq 'http' -and
-                $Value -eq 1
-            }
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Select-Object -ExpandProperty http |
+                Should Be 1
         }
     }
 
     Context '[Add top-level domain to Restricted Sites zone]' {
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSPath = "$domainsRegistryPath\foobar.com"
-        }
-
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return @()
-        }
-
-        Mock Get-Item {return $fakeDomainRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com"
-        }
-
-        Mock New-Item {return $false} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com"
-        }
-
-        Mock New-ItemProperty {} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com"
-        }
-
-        Mock Test-Path {return $false} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com"
+        It 'Domain registry key does not already exist' {
+            Test-Path -Path "$domainsRegistryPath\foobar.com" | Should Be $false
         }
 
         Add-InternetSecurityZoneMapping `
             -Zone RestrictedSites `
             -Patterns http://foobar.com
 
-        It 'Reads expected registry key to check if domain exists' {
-            Assert-MockCalled Test-Path -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\foobar.com"
-            }
-        }
-
         It 'Creates new registry key when domain does not exist' {
-            Assert-MockCalled New-Item -Times 1 -Exactly
-            Assert-MockCalled New-Item -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\foobar.com"
-            }
+            Test-Path -Path "$domainsRegistryPath\foobar.com" | Should Be $true
         }
 
         It 'Sets registry value for scheme' {
-            Assert-MockCalled New-ItemProperty -Times 1 -Exactly
-            Assert-MockCalled New-ItemProperty -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\foobar.com" -and
-                $Name -eq 'http' -and
-                $PropertyType -eq 'DWORD' -and
-                $Value -eq 4
-            }
+            Get-ItemProperty -Path "$domainsRegistryPath\foobar.com" |
+                Select-Object -ExpandProperty http |
+                Should Be 4
         }
     }
 
@@ -273,76 +122,26 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
         #     \Domains
         #       \microsoft.com
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSPath = "$domainsRegistryPath\microsoft.com"
-        }
+        New-Item "$domainsRegistryPath\microsoft.com"
 
-        $fakeSubdomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSParentPath = "$domainsRegistryPath\microsoft.com"
-            PSPath       = "$domainsRegistryPath\microsoft.com\www"
-        }
-
-        $fakeSubdomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return $null
-        }
-
-        Mock Get-Item {return @($fakeSubdomainRegistryKey)} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com\www"
-            }
-
-        Mock Get-ItemProperty {return $fakeSubdomainSchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\www"
-        }
-
-        Mock New-Item {} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\www"
-        }
-
-        Mock New-ItemProperty {} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\www"
-        }
-
-        Mock Test-Path {return $true} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com"
-        }
-
-        Mock Test-Path {return $false} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\www"
+        It 'Subdomain registry key does not already exist' {
+            Test-Path -Path "$domainsRegistryPath\microsoft.com\www" |
+                Should Be $false
         }
 
         Add-InternetSecurityZoneMapping `
             -Zone TrustedSites `
             -Patterns https://www.microsoft.com
 
-        It 'Reads expected registry key to check if subdomain exists' {
-            Assert-MockCalled Test-Path -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com\www"
-            }
-        }
-
         It 'Creates new registry key when subdomain does not exist' {
-            Assert-MockCalled New-Item -Times 1 -Exactly
-            Assert-MockCalled New-Item -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com\www"
-            }
+            Test-Path -Path "$domainsRegistryPath\microsoft.com\www" |
+                Should Be $true
         }
 
         It 'Sets registry value for scheme' {
-            Assert-MockCalled New-ItemProperty -Times 1 -Exactly
-            Assert-MockCalled New-ItemProperty -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com\www" -and
-                $Name -eq 'https' -and
-                $PropertyType -eq 'DWORD' -and
-                $Value -eq 2
-            }
+            Get-ItemProperty -Path "$domainsRegistryPath\microsoft.com\www" |
+                Select-Object -ExpandProperty https |
+                Should Be 2
         }
     }
 
@@ -356,50 +155,16 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
         #         \www
         #           - https (2)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSPath = "$domainsRegistryPath\microsoft.com"
-        }
+        New-Item "$domainsRegistryPath\microsoft.com"
+        New-Item "$domainsRegistryPath\microsoft.com\www"
+        Set-ItemProperty -Path "$domainsRegistryPath\microsoft.com\www" `
+            -Name https -Value 2
 
-        $fakeSubdomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSParentPath = "$domainsRegistryPath\microsoft.com"
-            PSPath       = "$domainsRegistryPath\microsoft.com\www"
-        }
-
-        $fakeSubdomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return 2
-        }
-
-        Mock Get-Item {return @($fakeSubdomainRegistryKey)} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com\www"
-            }
-
-        Mock Get-ItemProperty {return $fakeSubdomainSchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\www"
-        }
-
-        Mock Test-Path {return $true} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com"
-        }
-
-        Mock Test-Path {return $true} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\www"
-        }
+        Mock Set-ItemProperty {}
 
         Add-InternetSecurityZoneMapping `
             -Zone TrustedSites `
             -Patterns http://www.microsoft.com
-
-        It 'Reads expected registry key to check if domain exists' {
-            Assert-MockCalled Test-Path -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com\www"
-            }
-        }
 
         It 'Does not set registry value for scheme' {
             Assert-MockCalled Set-ItemProperty -Times 0
@@ -416,120 +181,39 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
         #         \www
         #           - https (2)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSPath = "$domainsRegistryPath\foobar.com"
-        }
-
-        $fakeSubdomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSParentPath = "$domainsRegistryPath\foobar.com"
-            PSPath       = "$domainsRegistryPath\foobar.com\www"
-        }
-
-        $fakeSubdomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return 1
-        }
-
-        Mock Get-Item {return @($fakeSubdomainRegistryKey)} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\foobar.com\www"
-            }
-
-        Mock Get-ItemProperty {return $fakeSubdomainSchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com\www"
-        }
-
-        Mock Set-ItemProperty {} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com\www"
-        }
-
-        Mock Test-Path {return $true} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com"
-        }
-
-        Mock Test-Path {return $true} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com\www"
-        }
+        New-Item "$domainsRegistryPath\foobar.com"
+        New-Item "$domainsRegistryPath\foobar.com\www"
+        Set-ItemProperty -Path "$domainsRegistryPath\foobar.com\www" `
+            -Name https -Value 2
 
         Add-InternetSecurityZoneMapping `
             -Zone RestrictedSites `
             -Patterns https://www.foobar.com
 
-        It 'Reads expected registry key to check if domain exists' {
-            Assert-MockCalled Test-Path -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\foobar.com\www"
-            }
-        }
-
         It 'Sets registry value for scheme' {
-            Assert-MockCalled Set-ItemProperty -Times 1 -Exactly
-            Assert-MockCalled Set-ItemProperty -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\foobar.com\www" -and
-                $Name -eq 'https' -and
-                $Value -eq 4
-            }
+            Get-ItemProperty -Path "$domainsRegistryPath\foobar.com\www" |
+                Select-Object -ExpandProperty https |
+                Should Be 4
         }
     }
 
-    Context '[Adds domains specified in pipeline]' {
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-            PSPath = "$domainsRegistryPath\localhost"
+    Context '[Adds domain specified in pipeline]' {
+        It 'Domain registry key does not already exist' {
+            Test-Path "$domainsRegistryPath\localhost" | Should Be $false
         }
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValue {
-            return @()
-        }
-
-        Mock Get-Item {return $fakeDomainRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock New-Item {} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock New-ItemProperty {} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Test-Path {return $false} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        @('http://localhost') | Add-InternetSecurityZoneMapping `
+        'http://localhost' | Add-InternetSecurityZoneMapping `
             -Zone LocalIntranet
 
-        It 'Reads expected registry key to check if domain exists' {
-            Assert-MockCalled Test-Path -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-        }
 
         It 'Creates new registry key when domain does not exist' {
-            Assert-MockCalled New-Item -Times 1 -Exactly
-            Assert-MockCalled New-Item -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
+            Test-Path "$domainsRegistryPath\localhost" | Should Be $true
         }
 
         It 'Sets registry value for scheme' {
-            Assert-MockCalled New-ItemProperty -Times 1 -Exactly
-            Assert-MockCalled New-ItemProperty -Times 1 -Exactly `
-                -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost" -and
-                $Name -eq 'http' -and
-                $PropertyType -eq 'DWORD' -and
-                $Value -eq 1
-            }
+            Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
+                Select-Object -ExpandProperty http |
+                Should Be 1
         }
     }
 }

@@ -3,35 +3,34 @@
 . $PSScriptRoot\Get-InternetSecurityZoneMapping.ps1
 
 Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
-    [string] $zoneMapPath = 'HKCU:\Software\Microsoft\Windows' `
-        + '\CurrentVersion\Internet Settings\ZoneMap'
+    Mock IsEscEnabled {return $false}
 
+    # Fake registry entries:
+    #
+    # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
+    #   \ZoneMap
+    #     \Domains
+
+    [string] $zoneMapPath = 'TestRegistry:\ZoneMap'
     [string] $domainsRegistryPath = "$zoneMapPath\Domains"
 
-    [string] $escRegistryPath = 'HKLM:\SOFTWARE\Microsoft\Active Setup' `
-        + '\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}'
+    New-Item "$zoneMapPath"
+    New-Item "$domainsRegistryPath"
 
-    Mock Get-ChildItem {Throw "Mock Get-ChildItem called with unexpected Path ($Path)"}
-    Mock Get-Item {Throw "Mock Get-Item called with unexpected Path ($Path)"}
-    Mock Test-Path {Throw "Mock Test-Path called with unexpected Path ($Path)"}
-    Mock Test-Path {return $false} -ParameterFilter {
-        $Path -eq $escRegistryPath
-    }
+    Mock GetZoneMapPath {return $zoneMapPath}
 
     Context '[Domains registry key is empty]' {
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-            $Path -eq $domainsRegistryPath
+        # Fake registry entries:
+        #
+        # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
+        #   \ZoneMap
+        #     \Domains
+
+        It 'Domains registry key is empty' {
+            Get-ChildItem "$domainsRegistryPath" | Should Be $null
         }
 
         $result = Get-InternetSecurityZoneMapping
-
-        It 'Reads expected registry key' {
-            Assert-MockCalled Get-ChildItem -Times 1 -Exactly
-            Assert-MockCalled Get-ChildItem -Times 1 -Exactly `
-                -ParameterFilter {
-                    $Path -eq $domainsRegistryPath
-                }
-        }
 
         It 'Returns null when Domains registry key is empty' {
             $result | Should Be $null
@@ -48,36 +47,12 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
         #         - http (2)
         #         - https (2)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\windowsupdate.com"
-            }
+        New-Item "$domainsRegistryPath\windowsupdate.com"
+        Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
+            -Name http -Value 2
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
-
-        $fakeDomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'windowsupdate.com'
-                http = 2
-                https = 2
-            }
-
-        Mock Get-ChildItem {return @($fakeDomainRegistryKey)} -ParameterFilter {
-                $Path -eq $domainsRegistryPath
-            }
-
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\windowsupdate.com"
-            }
-
-        Mock Get-ItemProperty {return $fakeDomainSchemeRegistryKey} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\windowsupdate.com"
-            }
+        Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
+            -Name https -Value 2
 
         $result = Get-InternetSecurityZoneMapping
 
@@ -98,36 +73,12 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
         #         - http (4)
         #         - https (4)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\foobar.com"
-            }
+        New-Item "$domainsRegistryPath\foobar.com"
+        Set-ItemProperty -Path "$domainsRegistryPath\foobar.com" `
+            -Name http -Value 4
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
-
-        $fakeDomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'foobar.com'
-                http = 4
-                https = 4
-            }
-
-        Mock Get-ChildItem {return @($fakeDomainRegistryKey)} -ParameterFilter {
-                $Path -eq $domainsRegistryPath
-            }
-
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\foobar.com"
-        }
-
-        Mock Get-ItemProperty {return $fakeDomainSchemeRegistryKey} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\foobar.com"
-            }
+        Set-ItemProperty -Path "$domainsRegistryPath\foobar.com" `
+            -Name https -Value 4
 
         $result = Get-InternetSecurityZoneMapping
 
@@ -151,63 +102,19 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
         #         - http (2)
         #         - https (2)
 
-        $fakeDomain1RegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\localhost"
-            }
+        New-Item "$domainsRegistryPath\localhost"
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name http -Value 1
 
-        $fakeDomain1RegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name https -Value 1
 
-        $fakeDomain1SchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'localhost'
-                http = 1
-                https = 1
-            }
+        New-Item "$domainsRegistryPath\windowsupdate.com"
+        Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
+            -Name http -Value 2
 
-        $fakeDomain2RegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\windowsupdate.com"
-            }
-
-        $fakeDomain2RegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
-
-        $fakeDomain2SchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'windowsupdate.com'
-                http = 2
-                https = 2
-            }
-
-        Mock Get-ChildItem {
-                return @($fakeDomain1RegistryKey, $fakeDomain2RegistryKey)} `
-            -ParameterFilter {
-                $Path -eq $domainsRegistryPath
-            }
-
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\windowsupdate.com"
-            }
-
-        Mock Get-ItemProperty {return $fakeDomain1SchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Get-ItemProperty {return $fakeDomain2SchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\windowsupdate.com"
-        }
+        Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
+            -Name https -Value 2
 
         $result = Get-InternetSecurityZoneMapping
 
@@ -237,65 +144,19 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
         #         - http (2)
         #         - https (2)
 
-        $fakeDomain1RegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\localhost"
-            }
+        New-Item "$domainsRegistryPath\localhost"
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name http -Value 1
 
-        $fakeDomain1RegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name https -Value 1
 
-        $fakeDomain1SchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'localhost'
-                http = 1
-                https = 1
-            }
+        New-Item "$domainsRegistryPath\windowsupdate.com"
+        Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
+            -Name http -Value 2
 
-        $fakeDomain2RegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\windowsupdate.com"
-            }
-
-        $fakeDomain2RegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
-
-        $fakeDomain2SchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'windowsupdate.com'
-                http = 2
-                https = 2
-            }
-
-        Mock Get-ChildItem {
-                return @($fakeDomain1RegistryKey, $fakeDomain2RegistryKey)} `
-            -ParameterFilter {
-                $Path -eq $domainsRegistryPath
-            }
-
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\windowsupdate.com"
-            }
-
-        Mock Get-ItemProperty {return $fakeDomain1SchemeRegistryKey} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-ItemProperty {return $fakeDomain2SchemeRegistryKey} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\windowsupdate.com"
-            }
+        Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
+            -Name https -Value 2
 
         $result = Get-InternetSecurityZoneMapping -Zone LocalIntranet
 
@@ -322,70 +183,20 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
         #         \www
         #           - http (2)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\microsoft.com"
-            }
+        New-Item "$domainsRegistryPath\microsoft.com"
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @()
-        }
+        New-Item "$domainsRegistryPath\microsoft.com\*.windowsupdate"
+        Set-ItemProperty `
+            -Path "$domainsRegistryPath\microsoft.com\*.windowsupdate" `
+            -Name http -Value 2
 
-        $fakeSubdomain1RegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSParentPath = "$domainsRegistryPath\microsoft.com"
-                PSPath = "$domainsRegistryPath\microsoft.com\*.windowsupdate"
-            }
+        Set-ItemProperty `
+            -Path "$domainsRegistryPath\microsoft.com\*.windowsupdate" `
+            -Name https -Value 2
 
-        $fakeSubdomain1RegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
-
-        $fakeSubdomain1SchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = '*.windowsupdate'
-                http = 2
-                https = 2
-            }
-
-        $fakeSubdomain2RegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSParentPath = "$domainsRegistryPath\microsoft.com"
-                PSPath = "$domainsRegistryPath\microsoft.com\www"
-            }
-
-        $fakeSubdomain2RegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http')
-        }
-
-        $fakeSubdomain2SchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'www'
-                http = 2
-            }
-
-        Mock Get-ChildItem {return @($fakeDomainRegistryKey)} `
-            -ParameterFilter {
-                $Path -eq $domainsRegistryPath
-            }
-
-        Mock Get-ChildItem {return @($fakeSubdomain1RegistryKey, $fakeSubdomain2RegistryKey)} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com"
-            }
-
-        Mock Get-ItemProperty {return $fakeSubdomain1SchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\*.windowsupdate"
-        }
-
-        Mock Get-ItemProperty {return $fakeSubdomain2SchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\www"
-        }
+        New-Item "$domainsRegistryPath\microsoft.com\www"
+        Set-ItemProperty -Path "$domainsRegistryPath\microsoft.com\www" `
+            -Name http -Value 2
 
         $result = Get-InternetSecurityZoneMapping
 
@@ -403,44 +214,34 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
 }
 
 Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
-    [string] $zoneMapPath = 'HKCU:\Software\Microsoft\Windows' `
-        + '\CurrentVersion\Internet Settings\ZoneMap'
+    Mock IsEscEnabled {return $true}
 
+    [string] $zoneMapPath = 'TestRegistry:\ZoneMap'
     [string] $domainsRegistryPath = "$zoneMapPath\EscDomains"
 
-    [string] $escRegistryPath = 'HKLM:\SOFTWARE\Microsoft\Active Setup' `
-        + '\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}'
+    # Fake registry entries:
+    #
+    # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
+    #   \ZoneMap
+    #     \EscDomains
 
-    Mock Get-ChildItem {Throw "Mock Get-ChildItem called with unexpected Path ($Path)"}
-    Mock Get-Item {Throw "Mock Get-Item called with unexpected Path ($Path)"}
-    Mock Test-Path {Throw "Mock Test-Path called with unexpected Path ($Path)"}
-    Mock Test-Path {return $true} -ParameterFilter {
-        $Path -eq $escRegistryPath
-    }
+    New-Item "$zoneMapPath"
+    New-Item "$domainsRegistryPath"
 
-    Mock Get-ItemProperty {
-        return New-Object `
-            -TypeName psobject `
-            -Property @{
-                IsInstalled = 1
-            }
-        } `
-        -ParameterFilter { $Path -eq $escRegistryPath }
+    Mock GetZoneMapPath {return $zoneMapPath}
 
     Context '[EscDomains registry key is empty]' {
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-            $Path -eq $domainsRegistryPath
+        # Fake registry entries:
+        #
+        # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
+        #   \ZoneMap
+        #     \EscDomains
+
+        It 'EscDomains registry key is empty' {
+            Get-ChildItem "$domainsRegistryPath" | Should Be $null
         }
 
         $result = Get-InternetSecurityZoneMapping
-
-        It 'Reads expected registry key' {
-            Assert-MockCalled Get-ChildItem -Times 1 -Exactly
-            Assert-MockCalled Get-ChildItem -Times 1 -Exactly `
-                -ParameterFilter {
-                    $Path -eq $domainsRegistryPath
-                }
-        }
 
         It 'Returns null when Domains registry key is empty' {
             $result | Should Be $null
@@ -452,41 +253,17 @@ Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
         #
         # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
         #   \ZoneMap
-        #     \Domains
+        #     \EscDomains
         #       \windowsupdate.com
         #         - http (2)
         #         - https (2)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\windowsupdate.com"
-            }
+        New-Item "$domainsRegistryPath\windowsupdate.com"
+        Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
+            -Name http -Value 2
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
-
-        $fakeDomainSchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'windowsupdate.com'
-                http = 2
-                https = 2
-            }
-
-        Mock Get-ChildItem {return @($fakeDomainRegistryKey)} -ParameterFilter {
-                $Path -eq $domainsRegistryPath
-            }
-
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\windowsupdate.com"
-            }
-
-        Mock Get-ItemProperty {return $fakeDomainSchemeRegistryKey} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\windowsupdate.com"
-            }
+        Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
+            -Name https -Value 2
 
         $result = Get-InternetSecurityZoneMapping
 
@@ -502,7 +279,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
         #
         # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
         #   \ZoneMap
-        #     \Domains
+        #     \EscDomains
         #       \localhost
         #         - http (1)
         #         - https (1)
@@ -510,63 +287,19 @@ Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
         #         - http (2)
         #         - https (2)
 
-        $fakeDomain1RegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\localhost"
-            }
+        New-Item "$domainsRegistryPath\localhost"
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name http -Value 1
 
-        $fakeDomain1RegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
+        Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
+            -Name https -Value 1
 
-        $fakeDomain1SchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'localhost'
-                http = 1
-                https = 1
-            }
+        New-Item "$domainsRegistryPath\windowsupdate.com"
+        Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
+            -Name http -Value 2
 
-        $fakeDomain2RegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\windowsupdate.com"
-            }
-
-        $fakeDomain2RegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
-
-        $fakeDomain2SchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'windowsupdate.com'
-                http = 2
-                https = 2
-            }
-
-        Mock Get-ChildItem {
-                return @($fakeDomain1RegistryKey, $fakeDomain2RegistryKey)} `
-            -ParameterFilter {
-                $Path -eq $domainsRegistryPath
-            }
-
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\localhost"
-            }
-
-        Mock Get-ChildItem {return @()} -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\windowsupdate.com"
-            }
-
-        Mock Get-ItemProperty {return $fakeDomain1SchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\localhost"
-        }
-
-        Mock Get-ItemProperty {return $fakeDomain2SchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\windowsupdate.com"
-        }
+        Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
+            -Name https -Value 2
 
         $result = Get-InternetSecurityZoneMapping
 
@@ -588,7 +321,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
         #
         # HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings
         #   \ZoneMap
-        #     \Domains
+        #     \EscDomains
         #       \microsoft.com
         #         \*.windowsupdate
         #           - http (2)
@@ -596,70 +329,20 @@ Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
         #         \www
         #           - http (2)
 
-        $fakeDomainRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSPath = "$domainsRegistryPath\microsoft.com"
-            }
+        New-Item "$domainsRegistryPath\microsoft.com"
 
-        $fakeDomainRegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @()
-        }
+        New-Item "$domainsRegistryPath\microsoft.com\*.windowsupdate"
+        Set-ItemProperty `
+            -Path "$domainsRegistryPath\microsoft.com\*.windowsupdate" `
+            -Name http -Value 2
 
-        $fakeSubdomain1RegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSParentPath = "$domainsRegistryPath\microsoft.com"
-                PSPath = "$domainsRegistryPath\microsoft.com\*.windowsupdate"
-            }
+        Set-ItemProperty `
+            -Path "$domainsRegistryPath\microsoft.com\*.windowsupdate" `
+            -Name https -Value 2
 
-        $fakeSubdomain1RegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http', 'https')
-        }
-
-        $fakeSubdomain1SchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = '*.windowsupdate'
-                http = 2
-                https = 2
-            }
-
-        $fakeSubdomain2RegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSParentPath = "$domainsRegistryPath\microsoft.com"
-                PSPath = "$domainsRegistryPath\microsoft.com\www"
-            }
-
-        $fakeSubdomain2RegistryKey | Add-Member ScriptMethod GetValueNames {
-            return @('http')
-        }
-
-        $fakeSubdomain2SchemeRegistryKey = New-Object `
-            -TypeName psobject `
-            -Property @{
-                PSChildName = 'www'
-                http = 2
-            }
-
-        Mock Get-ChildItem {return @($fakeDomainRegistryKey)} `
-            -ParameterFilter {
-                $Path -eq $domainsRegistryPath
-            }
-
-        Mock Get-ChildItem {return @($fakeSubdomain1RegistryKey, $fakeSubdomain2RegistryKey)} `
-            -ParameterFilter {
-                $Path -eq "$domainsRegistryPath\microsoft.com"
-            }
-
-        Mock Get-ItemProperty {return $fakeSubdomain1SchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\*.windowsupdate"
-        }
-
-        Mock Get-ItemProperty {return $fakeSubdomain2SchemeRegistryKey} -ParameterFilter {
-            $Path -eq "$domainsRegistryPath\microsoft.com\www"
-        }
+        New-Item "$domainsRegistryPath\microsoft.com\www"
+        Set-ItemProperty -Path "$domainsRegistryPath\microsoft.com\www" `
+            -Name http -Value 2
 
         $result = Get-InternetSecurityZoneMapping
 
