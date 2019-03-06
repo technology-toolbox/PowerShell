@@ -1,4 +1,40 @@
-﻿function Add-UrlSecurityZoneMapping {
+﻿<#
+.SYNOPSIS
+Adds one or more patterns to the specified URL security zone for the current
+user.
+
+.DESCRIPTION
+URL security zones group URL namespaces according to their respective levels of
+trust. URL patterns can be added to the Local Intranet Zone, Trusted Sites
+Zone, and Restricted Sites Zone.
+
+.LINK
+https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/ms537183(v=vs.85)
+
+.PARAMETER Zone
+Specifies the URL security zone ("LocalIntranet", "TrustedSites" or
+"RestrictedSites") to add the patterns to.
+
+.PARAMETER Patterns
+Specifies the URL patterns to add the zone mappings for.
+
+.EXAMPLE
+.\Add-UrlSecurityZoneMapping.ps1 -Zone LocalIntranet -Patterns http://localhost
+
+Adds the "http" scheme for the "localhost" domain to the Local Intranet Zone.
+
+.EXAMPLE
+.\Add-UrlSecurityZoneMapping.ps1 TrustedSites https://fabrikam.com
+
+Adds the "https" scheme for the "fabrikam.com" domain to the Trusted Sites Zone.
+
+.EXAMPLE
+.\Add-UrlSecurityZoneMapping.ps1 TrustedSites http://www.fabrikam.com, https://www.fabrikam.com
+
+Adds the "http" and "https" schemes for the "www.fabrikam.com" subdomain to the
+Trusted Sites Zone.
+#>
+function Add-UrlSecurityZoneMapping {
     [CmdletBinding(
         SupportsShouldProcess = $true,
         ConfirmImpact = "Medium")]

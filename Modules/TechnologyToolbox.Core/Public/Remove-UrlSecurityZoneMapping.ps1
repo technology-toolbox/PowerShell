@@ -1,4 +1,36 @@
-﻿function Remove-UrlSecurityZoneMapping {
+﻿<#
+.SYNOPSIS
+Removes one or more URL security zone mappings for the current user.
+
+.DESCRIPTION
+URL security zones group URL namespaces according to their respective levels of
+trust.
+
+.LINK
+https://docs.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/platform-apis/ms537183(v=vs.85)
+
+.PARAMETER Patterns
+Specifies the URL patterns to remove the zone mappings for.
+
+.EXAMPLE
+.\Remove-UrlSecurityZoneMapping.ps1 -Patterns http://localhost
+
+Removes the URL security zone mapping corresponding to the "http" scheme for the
+"localhost" domain.
+
+.EXAMPLE
+.\Remove-UrlSecurityZoneMapping.ps1 https://fabrikam.com
+
+Removes the URL security zone mapping corresponding to the "https" scheme for the
+"fabrikam.com" domain.
+
+.EXAMPLE
+.\Remove-UrlSecurityZoneMapping.ps1 http://www.fabrikam.com, https://www.fabrikam.com
+
+Removes the URL security zone mappings corresponding to the "http" and "https"
+schemes for the "www.fabrikam.com" subdomain.
+#>
+function Remove-UrlSecurityZoneMapping {
     [CmdletBinding(
         SupportsShouldProcess = $true,
         ConfirmImpact = "Medium")]
