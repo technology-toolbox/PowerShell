@@ -1,8 +1,8 @@
-. $PSScriptRoot\GetZoneMapPath.ps1
+. $PSScriptRoot\GetUrlSecurityZoneMapPath.ps1
 
-Describe 'GetZoneMapPath Tests' {
+Describe 'GetUrlSecurityZoneMapPath Tests' {
     It 'Returns expected value' {
-        GetZoneMapPath |
+        GetUrlSecurityZoneMapPath |
             Should Be ('HKCU:\Software\Microsoft\Windows' `
                 + '\CurrentVersion\Internet Settings\ZoneMap')
     }

@@ -1,12 +1,12 @@
-. $PSScriptRoot\GetInternetSecurityZoneMappingInfo.ps1
-. $PSScriptRoot\GetZoneMapPath.ps1
+. $PSScriptRoot\GetUrlSecurityZoneMappingInfo.ps1
+. $PSScriptRoot\GetUrlSecurityZoneMapPath.ps1
 . $PSScriptRoot\IsEscEnabled.ps1
 
-Describe 'GetInternetSecurityZoneMappingInfo Tests (ESC enabled)' {
+Describe 'GetUrlSecurityZoneMappingInfo Tests (ESC enabled)' {
     Mock IsEscEnabled {return $true}
 
     Context '[Local intranet URL]' {
-        $result = GetInternetSecurityZoneMappingInfo `
+        $result = GetUrlSecurityZoneMappingInfo `
             -Pattern http://localhost
 
         It 'Sets Domain to expected value' {
@@ -29,7 +29,7 @@ Describe 'GetInternetSecurityZoneMappingInfo Tests (ESC enabled)' {
     }
 
     Context '[Top-level domain URL]' {
-        $result = GetInternetSecurityZoneMappingInfo `
+        $result = GetUrlSecurityZoneMappingInfo `
             -Pattern https://foobar.com
 
         It 'Sets Domain to expected value' {
@@ -52,7 +52,7 @@ Describe 'GetInternetSecurityZoneMappingInfo Tests (ESC enabled)' {
     }
 
     Context '[URL with subdomain]' {
-        $result = GetInternetSecurityZoneMappingInfo `
+        $result = GetUrlSecurityZoneMappingInfo `
             -Pattern https://www.foobar.com
 
         It 'Sets Domain to expected value' {
@@ -75,11 +75,11 @@ Describe 'GetInternetSecurityZoneMappingInfo Tests (ESC enabled)' {
     }
 }
 
-Describe 'GetInternetSecurityZoneMappingInfo Tests (ESC disabled)' {
+Describe 'GetUrlSecurityZoneMappingInfo Tests (ESC disabled)' {
     Mock IsEscEnabled {return $false}
 
     Context '[URL with subdomain]' {
-        $result = GetInternetSecurityZoneMappingInfo `
+        $result = GetUrlSecurityZoneMappingInfo `
             -Pattern https://www.foobar.com
 
         It 'Sets Domain to expected value' {

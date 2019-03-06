@@ -1,4 +1,4 @@
-function GetInternetSecurityZoneMappingInfo {
+function GetUrlSecurityZoneMappingInfo {
     Param(
         [string] $Pattern
     )
@@ -34,7 +34,7 @@ function GetInternetSecurityZoneMappingInfo {
     Write-Debug "subdomain: $subdomain"
     Write-Debug "domain: $domain"
 
-    [string] $zoneMapPath = GetZoneMapPath
+    [string] $zoneMapPath = GetUrlSecurityZoneMapPath
 
     [string] $registryPath = $null
 

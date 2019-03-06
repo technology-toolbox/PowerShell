@@ -3,20 +3,20 @@
 Gets the URL patterns mapped to various security zones.
 
 .DESCRIPTION
-The Get-InternetSecurityZoneMapping cmdlet gets the complete set of patterns
+The Get-UrlSecurityZoneMapping cmdlet gets the complete set of patterns
 mapped to a security zone.
 
-Without parameters, Get-InternetSecurityZoneMapping gets all of the zone
+Without parameters, Get-UrlSecurityZoneMapping gets all of the zone
 mappings for the current user. You can also specify a particular zone.
 
-Get-InternetSecurityZoneMapping returns objects that have Zone and Pattern
+Get-UrlSecurityZoneMapping returns objects that have Zone and Pattern
 properties.
 
 .PARAMETER Zone
 Optional parameter that specifies the zone to get the mappings for.
 
 .EXAMPLE
-.\Get-InternetSecurityZoneMapping.ps1
+.\Get-UrlSecurityZoneMapping.ps1
 
 Zone            Pattern
 ----            -------
@@ -26,7 +26,7 @@ TrustedSites    http://*.windowsupdate.microsoft.com
 TrustedSites    https://*.windowsupdate.microsoft.com
 
 .EXAMPLE
-.\Get-InternetSecurityZoneMapping.ps1 -Zone LocalIntranet
+.\Get-UrlSecurityZoneMapping.ps1 -Zone LocalIntranet
 
 Zone            Pattern
 ----            -------
@@ -34,7 +34,7 @@ LocalIntranet   http://foobar
 LocalIntranet   money://@surf.mar@
 
 #>
-function Get-InternetSecurityZoneMapping {
+function Get-UrlSecurityZoneMapping {
     [CmdletBinding()]
     Param(
         [Parameter(Position = 0)]
@@ -63,7 +63,7 @@ function Get-InternetSecurityZoneMapping {
 
             Write-Debug "zoneFilter: $zoneFilter"
 
-            [string] $zoneMapPath = GetZoneMapPath
+            [string] $zoneMapPath = GetUrlSecurityZoneMapPath
             [string] $registryPath = $null
 
             If (IsEscEnabled -eq $true) {

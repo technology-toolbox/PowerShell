@@ -1,10 +1,10 @@
-﻿. $PSScriptRoot\..\Private\GetInternetSecurityZoneMappingInfo.ps1
-. $PSScriptRoot\..\Private\GetZoneMapPath.ps1
+﻿. $PSScriptRoot\..\Private\GetUrlSecurityZoneMappingInfo.ps1
+. $PSScriptRoot\..\Private\GetUrlSecurityZoneMapPath.ps1
 . $PSScriptRoot\..\Private\IsEscEnabled.ps1
 . $PSScriptRoot\..\Private\RemoveRegistryKeyIfEmpty.ps1
-. $PSScriptRoot\Remove-InternetSecurityZoneMapping.ps1
+. $PSScriptRoot\Remove-UrlSecurityZoneMapping.ps1
 
-Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
+Describe 'Remove-UrlSecurityZoneMapping Tests (No ESC)' {
     Mock IsEscEnabled {return $false}
 
     # Fake registry entries:
@@ -19,7 +19,7 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
     New-Item "$zoneMapPath"
     New-Item "$domainsRegistryPath"
 
-    Mock GetZoneMapPath {return $zoneMapPath}
+    Mock GetUrlSecurityZoneMapPath {return $zoneMapPath}
 
     Context '[Domains registry key is empty]' {
         # Fake registry entries:
@@ -34,7 +34,7 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
 
         Mock Remove-ItemProperty {}
 
-        Remove-InternetSecurityZoneMapping http://localhost
+        Remove-UrlSecurityZoneMapping http://localhost
 
         It 'Does not remove registry value for scheme' {
             Assert-MockCalled Remove-ItemProperty -Times 0
@@ -68,7 +68,7 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
                 Should Be 1
         }
 
-        Remove-InternetSecurityZoneMapping http://localhost
+        Remove-UrlSecurityZoneMapping http://localhost
 
         It 'Removes registry value for scheme' {
             Get-ItemProperty -Path "$domainsRegistryPath\localhost" |
@@ -96,7 +96,7 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\foobar.com" `
             -Name http -Value 4
 
-        Remove-InternetSecurityZoneMapping https://foobar.com
+        Remove-UrlSecurityZoneMapping https://foobar.com
 
         It 'Does not remove registry value for scheme' {
             Get-ItemProperty -Path "$domainsRegistryPath\foobar.com" |
@@ -118,7 +118,7 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
             -Name http -Value 1
 
-        Remove-InternetSecurityZoneMapping http://localhost
+        Remove-UrlSecurityZoneMapping http://localhost
 
         It 'Removes registry key for domain' {
             Test-Path -Path "$domainsRegistryPath\localhost" | Should Be $false
@@ -140,7 +140,7 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\microsoft.com\www" `
             -Name http -Value 2
 
-        Remove-InternetSecurityZoneMapping http://www.microsoft.com
+        Remove-UrlSecurityZoneMapping http://www.microsoft.com
 
         It 'Removes registry key for domain' {
             Test-Path -Path "$domainsRegistryPath\microsoft.com" | Should Be $false
@@ -162,7 +162,7 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\foobar.com\www" `
             -Name https -Value 2
 
-        Remove-InternetSecurityZoneMapping http://www.foobar.com
+        Remove-UrlSecurityZoneMapping http://www.foobar.com
 
         It 'Does not remove registry value for scheme' {
             Get-ItemProperty -Path "$domainsRegistryPath\foobar.com\www" |
@@ -198,7 +198,7 @@ Describe 'Remove-InternetSecurityZoneMapping Tests (No ESC)' {
                 Should Be 1
         }
 
-        'http://localhost' | Remove-InternetSecurityZoneMapping
+        'http://localhost' | Remove-UrlSecurityZoneMapping
 
         It 'Removes registry value for scheme' {
             Get-ItemProperty -Path "$domainsRegistryPath\localhost" |

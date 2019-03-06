@@ -1,9 +1,9 @@
-. $PSScriptRoot\..\Private\GetInternetSecurityZoneMappingInfo.ps1
-. $PSScriptRoot\..\Private\GetZoneMapPath.ps1
+. $PSScriptRoot\..\Private\GetUrlSecurityZoneMappingInfo.ps1
+. $PSScriptRoot\..\Private\GetUrlSecurityZoneMapPath.ps1
 . $PSScriptRoot\..\Private\IsEscEnabled.ps1
-. $PSScriptRoot\Add-InternetSecurityZoneMapping.ps1
+. $PSScriptRoot\Add-UrlSecurityZoneMapping.ps1
 
-Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
+Describe 'Add-UrlSecurityZoneMapping Tests (No ESC)' {
     Mock IsEscEnabled {return $false}
 
     # Fake registry entries:
@@ -18,7 +18,7 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
     New-Item "$zoneMapPath"
     New-Item "$domainsRegistryPath"
 
-    Mock GetZoneMapPath {return $zoneMapPath}
+    Mock GetUrlSecurityZoneMapPath {return $zoneMapPath}
 
     Context '[Domains registry key is empty]' {
         # Fake registry entries:
@@ -31,7 +31,7 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
             Test-Path "$domainsRegistryPath\localhost" | Should Be $false
         }
 
-        Add-InternetSecurityZoneMapping `
+        Add-UrlSecurityZoneMapping `
             -Zone LocalIntranet `
             -Patterns http://localhost
 
@@ -61,7 +61,7 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
 
         Mock Set-ItemProperty {}
 
-        Add-InternetSecurityZoneMapping `
+        Add-UrlSecurityZoneMapping `
             -Zone LocalIntranet `
             -Patterns http://localhost
 
@@ -83,7 +83,7 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\localhost" `
             -Name http -Value 2
 
-        Add-InternetSecurityZoneMapping `
+        Add-UrlSecurityZoneMapping `
             -Zone LocalIntranet `
             -Patterns http://localhost
 
@@ -99,7 +99,7 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
             Test-Path -Path "$domainsRegistryPath\foobar.com" | Should Be $false
         }
 
-        Add-InternetSecurityZoneMapping `
+        Add-UrlSecurityZoneMapping `
             -Zone RestrictedSites `
             -Patterns http://foobar.com
 
@@ -126,7 +126,7 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
                 Should Be $false
         }
 
-        Add-InternetSecurityZoneMapping `
+        Add-UrlSecurityZoneMapping `
             -Zone TrustedSites `
             -Patterns https://www.microsoft.com
 
@@ -159,7 +159,7 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
 
         Mock Set-ItemProperty {}
 
-        Add-InternetSecurityZoneMapping `
+        Add-UrlSecurityZoneMapping `
             -Zone TrustedSites `
             -Patterns http://www.microsoft.com
 
@@ -183,7 +183,7 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\foobar.com\www" `
             -Name https -Value 2
 
-        Add-InternetSecurityZoneMapping `
+        Add-UrlSecurityZoneMapping `
             -Zone RestrictedSites `
             -Patterns https://www.foobar.com
 
@@ -199,7 +199,7 @@ Describe 'Add-InternetSecurityZoneMapping Tests (No ESC)' {
             Test-Path "$domainsRegistryPath\localhost" | Should Be $false
         }
 
-        'http://localhost' | Add-InternetSecurityZoneMapping `
+        'http://localhost' | Add-UrlSecurityZoneMapping `
             -Zone LocalIntranet
 
 

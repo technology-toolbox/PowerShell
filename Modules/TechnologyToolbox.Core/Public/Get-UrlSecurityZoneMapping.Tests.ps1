@@ -1,8 +1,8 @@
-﻿. $PSScriptRoot\..\Private\GetZoneMapPath.ps1
+﻿. $PSScriptRoot\..\Private\GetUrlSecurityZoneMapPath.ps1
 . $PSScriptRoot\..\Private\IsEscEnabled.ps1
-. $PSScriptRoot\Get-InternetSecurityZoneMapping.ps1
+. $PSScriptRoot\Get-UrlSecurityZoneMapping.ps1
 
-Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
+Describe 'Get-UrlSecurityZoneMapping Tests (No ESC)' {
     Mock IsEscEnabled {return $false}
 
     # Fake registry entries:
@@ -17,7 +17,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
     New-Item "$zoneMapPath"
     New-Item "$domainsRegistryPath"
 
-    Mock GetZoneMapPath {return $zoneMapPath}
+    Mock GetUrlSecurityZoneMapPath {return $zoneMapPath}
 
     Context '[Domains registry key is empty]' {
         # Fake registry entries:
@@ -30,7 +30,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
             Get-ChildItem "$domainsRegistryPath" | Should Be $null
         }
 
-        $result = Get-InternetSecurityZoneMapping
+        $result = Get-UrlSecurityZoneMapping
 
         It 'Returns null when Domains registry key is empty' {
             $result | Should Be $null
@@ -54,7 +54,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
             -Name https -Value 2
 
-        $result = Get-InternetSecurityZoneMapping
+        $result = Get-UrlSecurityZoneMapping
 
         It 'Returns expected value' {
             $result.Zone | Should Be @('TrustedSites', 'TrustedSites')
@@ -80,7 +80,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\foobar.com" `
             -Name https -Value 4
 
-        $result = Get-InternetSecurityZoneMapping
+        $result = Get-UrlSecurityZoneMapping
 
         It 'Returns expected value' {
             $result.Zone | Should Be @('RestrictedSites', 'RestrictedSites')
@@ -116,7 +116,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
             -Name https -Value 2
 
-        $result = Get-InternetSecurityZoneMapping
+        $result = Get-UrlSecurityZoneMapping
 
         It 'Returns expected value' {
             $result.Zone |
@@ -158,7 +158,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
             -Name https -Value 2
 
-        $result = Get-InternetSecurityZoneMapping -Zone LocalIntranet
+        $result = Get-UrlSecurityZoneMapping -Zone LocalIntranet
 
         It 'Returns expected value' {
             $result.Zone |
@@ -198,7 +198,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\microsoft.com\www" `
             -Name http -Value 2
 
-        $result = Get-InternetSecurityZoneMapping
+        $result = Get-UrlSecurityZoneMapping
 
         It 'Returns expected value' {
             $result.Zone |
@@ -213,7 +213,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (No ESC)' {
     }
 }
 
-Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
+Describe 'Get-UrlSecurityZoneMapping Tests (ESC)' {
     Mock IsEscEnabled {return $true}
 
     [string] $zoneMapPath = 'TestRegistry:\ZoneMap'
@@ -228,7 +228,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
     New-Item "$zoneMapPath"
     New-Item "$domainsRegistryPath"
 
-    Mock GetZoneMapPath {return $zoneMapPath}
+    Mock GetUrlSecurityZoneMapPath {return $zoneMapPath}
 
     Context '[EscDomains registry key is empty]' {
         # Fake registry entries:
@@ -241,7 +241,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
             Get-ChildItem "$domainsRegistryPath" | Should Be $null
         }
 
-        $result = Get-InternetSecurityZoneMapping
+        $result = Get-UrlSecurityZoneMapping
 
         It 'Returns null when Domains registry key is empty' {
             $result | Should Be $null
@@ -265,7 +265,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
             -Name https -Value 2
 
-        $result = Get-InternetSecurityZoneMapping
+        $result = Get-UrlSecurityZoneMapping
 
         It 'Returns expected value' {
             $result.Zone | Should Be @('TrustedSites', 'TrustedSites')
@@ -301,7 +301,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\windowsupdate.com" `
             -Name https -Value 2
 
-        $result = Get-InternetSecurityZoneMapping
+        $result = Get-UrlSecurityZoneMapping
 
         It 'Returns expected value' {
             $result.Zone |
@@ -344,7 +344,7 @@ Describe 'Get-InternetSecurityZoneMapping Tests (ESC)' {
         Set-ItemProperty -Path "$domainsRegistryPath\microsoft.com\www" `
             -Name http -Value 2
 
-        $result = Get-InternetSecurityZoneMapping
+        $result = Get-UrlSecurityZoneMapping
 
         It 'Returns expected value' {
             $result.Zone |

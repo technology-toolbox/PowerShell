@@ -1,4 +1,4 @@
-﻿function Remove-InternetSecurityZoneMapping {
+﻿function Remove-UrlSecurityZoneMapping {
     [CmdletBinding(
         SupportsShouldProcess = $true,
         ConfirmImpact = "Medium")]
@@ -10,7 +10,7 @@
         Set-StrictMode -Version Latest
         $ErrorActionPreference = "Stop"
 
-        Function RemovePatternFromInternetSecurityZone {
+        Function RemovePatternFromUrlSecurityZone {
             [CmdletBinding(
                 SupportsShouldProcess = $true,
                 ConfirmImpact = "Medium")]
@@ -20,7 +20,7 @@
             Write-Verbose `
                 "Removing security zone mapping for pattern ($pattern)..."
 
-            $zoneMappingInfo = GetInternetSecurityZoneMappingInfo -Pattern $pattern
+            $zoneMappingInfo = GetUrlSecurityZoneMappingInfo -Pattern $pattern
 
             [string] $registryPath = $zoneMappingInfo.RegistryPath
 
@@ -101,7 +101,7 @@
         $Patterns | ForEach-Object {
             $pattern = $_
 
-            RemovePatternFromInternetSecurityZone $pattern
+            RemovePatternFromUrlSecurityZone $pattern
         }
     }
 }

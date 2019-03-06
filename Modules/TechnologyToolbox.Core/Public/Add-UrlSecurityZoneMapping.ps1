@@ -1,4 +1,4 @@
-﻿function Add-InternetSecurityZoneMapping {
+﻿function Add-UrlSecurityZoneMapping {
     [CmdletBinding(
         SupportsShouldProcess = $true,
         ConfirmImpact = "Medium")]
@@ -13,7 +13,7 @@
         Set-StrictMode -Version Latest
         $ErrorActionPreference = "Stop"
 
-        Function AddPatternToInternetSecurityZone {
+        Function AddPatternToUrlSecurityZone {
             [CmdletBinding(
                 SupportsShouldProcess = $true,
                 ConfirmImpact = "Medium")]
@@ -24,7 +24,7 @@
 
             Write-Verbose "Adding pattern ($pattern) to zone ($zone)..."
 
-            $zoneMappingInfo = GetInternetSecurityZoneMappingInfo -Pattern $pattern
+            $zoneMappingInfo = GetUrlSecurityZoneMappingInfo -Pattern $pattern
 
             [string] $registryPath = $zoneMappingInfo.RegistryPath
 
@@ -110,7 +110,7 @@
         $Patterns | ForEach-Object {
             $pattern = $_
 
-            AddPatternToInternetSecurityZone $Zone $pattern
+            AddPatternToUrlSecurityZone $Zone $pattern
         }
     }
 }
